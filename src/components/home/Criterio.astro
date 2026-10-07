@@ -1,0 +1,48 @@
+---
+/* Criterio (MAPA §3 fila 3): diferenciar ingeniería frente a parche. 3 frases del cliente, cada una con su respaldo, y cierre con
+   "Equipo de profesionales" [cliente · LT] ("certificados" solo con Q14). Reveals CSS con view(): data-reveal / data-stagger (--i).
+   Contrato: <section id="criterio" data-theme="light" aria-labelledby="criterio-title">, hijo directo de <main>. */
+import { legal } from '../../data/site.js';
+
+const frases = [
+  // [cliente · IG DYDlNeHjlEV] → respaldo [redactado sobre "diagnósticos precisos", mismo post]
+  { frase: 'No ponemos parches', respaldo: 'Diagnósticos precisos antes de reparar: se corrige la causa de la falla, no el síntoma.' },
+  // [cliente · IG DYDlNeHjlEV] → respaldo [redactado sobre IG DWO2-bmDn4f]
+  { frase: 'Ingeniería, no improvisación', respaldo: 'Cálculo de carga térmica y balance térmico antes de seleccionar cada equipo.' },
+  // [cliente · IG Dd7h8WOO9-3] → respaldo [redactado, mismo post] · " y soporte 24/7" se añade con Q11 (MAPA §3 fila 3: sin Q11, solo las unidades)
+  { frase: 'Cada minuto de inactividad cuenta', respaldo: 'Unidades de compresión con respaldo para operaciones críticas.' },
+];
+---
+<section id="criterio" class="section criterio" data-theme="light" aria-labelledby="criterio-title">
+  <div class="container">
+    <div class="section__head" data-reveal>
+      <span class="eyebrow">Criterio</span>
+      <h2 id="criterio-title">Lo que decimos y cómo lo cumplimos</h2>
+    </div>
+    <ul class="criterio__lista" role="list" data-stagger>
+      {frases.map((f) => (
+        <li class="criterio__item">
+          <h3 class="criterio__frase">“{f.frase}”</h3>
+          <p class="criterio__label label">En la práctica</p>
+          <p class="criterio__respaldo">{f.respaldo}</p>
+        </li>
+      ))}
+    </ul>
+    <p class="criterio__firma label" data-reveal><span>Equipo de profesionales <span class="muted">· {legal.company}</span></span></p>
+  </div>
+</section>
+
+<style>
+  .criterio__lista { list-style: none; display: grid; gap: clamp(40px, 5vw, 64px); }
+  .criterio__item { padding-top: 22px; border-top: 1px solid var(--line); position: relative; }
+  .criterio__item::before { content: ''; position: absolute; top: -2px; left: 0; width: 40px; height: 3px; background: var(--cyan); }
+  .criterio__frase { font-size: var(--step-3); line-height: 1.02; }
+  .criterio__label { margin-top: 1.5rem; font-size: var(--step--1); color: var(--stroke); }
+  .criterio__label + .criterio__respaldo { margin-top: 0.4rem; }
+  .criterio__respaldo { color: var(--muted); max-width: 36ch; }
+  .criterio__firma { display: flex; align-items: center; gap: 0.6em; margin-top: clamp(48px, 6vw, 80px); font-size: var(--step-1); }
+  .criterio__firma::before { content: ''; flex: none; width: 40px; height: 1px; background: var(--fg); }
+  @media (min-width: 900px) {
+    .criterio__lista { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

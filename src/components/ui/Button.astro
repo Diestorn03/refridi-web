@@ -1,0 +1,34 @@
+---
+/*
+  <Button href={wa('servicios', waText.home)} icon="whatsapp" iconPosition="start">Solicitar una inspección</Button>  → <a> (http(s) abre pestaña nueva)
+  <Button type="button">…</Button>                                                                                    → <button>
+  Relleno con --btn-bg / --btn-fg del tema (la propuesta no usa otras variantes).
+  size:    sm 44 px | md 48 px (por defecto) | lg 56 px.   icon: un nombre de Icon; iconPosition 'end' (por defecto) | 'start'.
+  El estilo vive en base.css (.btn, "Asiento" al presionar). Los atributos extra (data-*, aria-*, id…) pasan tal cual.
+*/
+import Icon, { type IconName } from './Icon.astro';
+import { ext, nuevaPestana } from '../../lib/url.js';
+interface Props {
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  icon?: IconName;
+  iconPosition?: 'start' | 'end';
+  class?: string;
+  [attr: string]: unknown;
+}
+const { size = 'md', href, type = 'button', icon, iconPosition = 'end', class: cls, ...rest } = Astro.props;
+const external = !!href && /^https?:\/\//.test(href);
+const Tag = href ? 'a' : 'button';
+---
+<Tag
+  class:list={['btn', 'btn--solid', `btn--${size}`, cls]}
+  href={href}
+  type={href ? undefined : type}
+  {...(external ? ext : {})}
+  {...rest}
+>
+  {icon && iconPosition === 'start' && <Icon name={icon} size={20} class="btn__icon" />}
+  <span class="btn__label"><slot />{external && <span class="sr-only"> {nuevaPestana}</span>}</span>
+  {icon && iconPosition === 'end' && <Icon name={icon} size={20} class="btn__icon" />}
+</Tag>

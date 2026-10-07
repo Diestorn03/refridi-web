@@ -1,0 +1,30 @@
+/* ==========================================================
+   Transición entre páginas (CONCEPTO §4 Transición): View Transitions nativas entre documentos, sin router.
+   · Solo con prefers-reduced-motion: no-preference. calm la salta en pagereveal (script inline de Base.astro).
+   · Root: la vieja se funde en --d-1; la nueva entra de opacity 0 y translateY(2vh) a reposo en --d-2, curva brand. lite: solo fundido.
+   · Header (`body > header`): view-transition-name cabecera, idéntico en ambas páginas → sin animación, no parpadea.
+   · Rótulo viajero: Base.astro nombra "rotulo" solo durante la transición ([data-rotulo] en la página de origen cuyo enlace coincide con el
+     destino → [data-rotulo-dest] en la nueva). Mismo cuerpo de letra en ambos: solo se traslada. lite: sin rótulo.
+   Firefox y Samsung Internet ignoran @view-transition: navegación normal.
+   ========================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  /* @view-transition { navigation: auto } vive EN LÍNEA en el <head> de Base.astro (aquí llegaba tarde y Chrome abortaba la transición) */
+
+  body > header:first-of-type { view-transition-name: cabecera; }
+
+  ::view-transition-old(root) { animation: rf-vt-out var(--d-1) var(--ease-brand) both; }
+  ::view-transition-new(root) { animation: rf-vt-in var(--d-2) var(--ease-brand) both; }
+  html.is-lite::view-transition-new(root) { animation-name: rf-vt-fade; }
+
+  ::view-transition-group(cabecera) { animation: none; }
+  ::view-transition-old(cabecera) { display: none; }
+  ::view-transition-new(cabecera) { animation: none; }
+
+  ::view-transition-group(rotulo) { animation-duration: var(--d-2); animation-timing-function: var(--ease-brand); }
+  /* sin escalar las capturas: si la caja difiere unos px entre páginas (p. ej. 320 px), el texto se dibuja a su tamaño, anclado arriba a la izquierda */
+  ::view-transition-old(rotulo), ::view-transition-new(rotulo) { animation-duration: var(--d-2); animation-timing-function: var(--ease-brand); width: 100%; height: 100%; object-fit: none; object-position: 0 0; }
+}
+
+@keyframes rf-vt-out { to { opacity: 0; } }
+@keyframes rf-vt-in { from { opacity: 0; transform: translateY(2vh); } }
+@keyframes rf-vt-fade { from { opacity: 0; } }

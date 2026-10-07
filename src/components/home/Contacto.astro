@@ -1,0 +1,93 @@
+---
+/* #contacto (brand): banda del CTA final (CONCEPTO §4 Cierre · MAPA §3 #8). La usan el home y las fichas de servicio, cada una con su CTA
+   y su waText (props). tel: y mailto: solo aquí y en el pie. Sin "Soporte 24 hrs" hasta Q11; sin embed de mapa (Q22: enlace de búsqueda).
+   La valoración de Google va como una línea mientras no exista #clientes (Q13/Q20). */
+import Button from '../ui/Button.astro';
+import Icon from '../ui/Icon.astro';
+import { home, contact, lines, wa, waText } from '../../data/site.js';
+import { ext, nuevaPestana as newTab } from '../../lib/url.js';
+
+interface Props { cta?: string; waText?: string }
+const { cta = home.cta, waText: text = home.waText } = Astro.props;
+const [ratingNum, ratingRest] = contact.rating.text.split('★');
+---
+<section id="contacto" class="section contacto" data-theme="brand" aria-labelledby="contacto-title">
+  <div class="container contacto__grid">
+    <div class="contacto__cta" data-reveal>
+      <p class="eyebrow">Contacto</p>
+      <h2 id="contacto-title">{home.closing}</h2>
+      <p class="lead">Escríbanos por WhatsApp qué equipo tiene y qué está pasando. Si lo prefiere, llame o envíe un correo.</p>
+      <div class="btn-row"><Button href={wa('servicios', text)} size="lg" icon="whatsapp" iconPosition="start">{cta}</Button></div>
+      <p class="contacto__rating">
+        <a class="contacto__a" href={contact.rating.url} {...ext}>
+          <span class="num">{ratingNum}</span><span aria-hidden="true" class="contacto__star">★</span><span class="sr-only">de 5 estrellas</span>{ratingRest}<span class="sr-only"> {newTab}</span>
+        </a>
+      </p>
+    </div>
+
+    <dl class="contacto__datos" data-stagger>
+      <div>
+        <dt><Icon name="phone" size={18} />Teléfono</dt>
+        <dd><a class="contacto__a num" href={lines.servicios.tel}>{lines.servicios.display}</a></dd>
+      </div>
+      <div>
+        <dt><Icon name="mail" size={18} />Correo</dt>
+        <dd><a class="contacto__a" href={contact.emailHref}>{contact.email}</a></dd>
+      </div>
+      <div>
+        <dt><Icon name="clock" size={18} />Horario</dt>
+        <dd>{contact.hours.map((h) => <span class="contacto__line">{h.label}, <span class="num">{h.text}</span></span>)}</dd>
+      </div>
+      <div>
+        <dt><Icon name="pin" size={18} />Dirección</dt>
+        <dd>
+          <span class="contacto__line">{contact.street}, {contact.streetNote}</span>
+          <span class="contacto__line">{contact.city} {contact.postalCode}, {contact.region}</span>
+          <a class="contacto__a" href={contact.mapsUrl} {...ext}>Ver en Google Maps<span class="sr-only"> {newTab}</span></a>
+        </dd>
+      </div>
+      <div>
+        <dt><Icon name="whatsapp" size={18} />Otras líneas</dt>
+        <dd>
+          <a class="contacto__a" href={wa('repuestos', waText.repuestos)} {...ext}>{lines.repuestos.label} <span class="num">{lines.repuestos.display}</span><span class="sr-only"> por WhatsApp {newTab}</span></a>
+          <a class="contacto__a" href={wa('academia', waText.academia)} {...ext}>{lines.academia.label} <span class="num">{lines.academia.display}</span><span class="sr-only"> por WhatsApp {newTab}</span></a>
+        </dd>
+      </div>
+    </dl>
+
+  </div>
+</section>
+
+<style>
+  .contacto__grid { display: grid; gap: clamp(36px, 5vw, 64px); }
+  @media (min-width: 900px) {
+    .contacto__grid { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: clamp(48px, 7vw, 112px); align-items: start; }
+  }
+  .contacto__cta .lead { margin-block: 1.25rem 2rem; }
+
+  .contacto__datos { margin: 0; border-top: 1px solid var(--line); }
+  .contacto__datos > div {
+    display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 16px; align-items: baseline;
+    padding-block: 14px; border-bottom: 1px solid var(--line);
+  }
+  .contacto__datos dt {
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--tap);
+    font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; font-size: var(--step--1); color: var(--stroke);
+  }
+  .contacto__datos dd { margin: 0; display: grid; justify-items: start; align-content: center; min-height: var(--tap); overflow-wrap: anywhere; }
+  .contacto__line { display: block; }
+  /* enlaces de la banda: blancos y subrayados, objetivo ≥44 px */
+  .contacto__a {
+    display: inline-block; padding-block: 10px; line-height: 1.5; /* ≥44 px de alto sin partir el subrayado */
+    color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em;
+  }
+  .contacto__a.num { font-size: var(--step-1); }
+  @media (hover: hover) and (pointer: fine) { .contacto__a:hover { text-decoration-thickness: 2px; } }
+  @media (max-width: 479px) {
+    .contacto__datos > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .contacto__datos dt { min-height: 0; }
+  }
+
+  .contacto__rating { margin-top: 1.5rem; }
+  .contacto__star { color: var(--stroke); }
+</style>

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.astro/
+.shots/
+.vite-*/
+.env
+.env.*
+*.log
+.DS_Store
+# Fotos del IG del cliente, hojas de contacto y recortes (62 MB, con personas): sin permiso todavía (Q8/Q21). Nunca al repo público.
+insumos/
+
+# Documentos internos: no van a un repo público (precio, preguntas al cliente, estado, preparación)
+PREPARACION.md
+docs/*
+!docs/QA-PROPUESTA.md

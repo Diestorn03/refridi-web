@@ -1,0 +1,221 @@
+---
+/* Hero (CONCEPTO §4 Hero, MAPA §3 fila 1). Contrato: <section id="inicio" data-theme="light" aria-labelledby="inicio-title"> primer hijo de
+   <main>; el H1 es el LCP (nunca espera al JS) y no hay data-reveal (regla 13). Un solo CTA (WhatsApp de servicios), sin tel:/mailto: ni
+   tira de datos bajo el CTA: los datos van en la PLACA, fijada a la esquina inferior del gráfico.
+   Gráfico: dibujo propio (sin stock ni fotos: Q8) de una unidad condensadora en axonométrica: cada cara se dibuja plana y una matriz la
+   lleva a su plano (frente: x→(.866,.5); lateral: x→(.866,−.5); tapa: ambas). Colores por tokens (cambia con la paleta). Decorativo.
+   Placa: "40+ Años" (POR CONFIRMAR Q10), "Atención 24/7" (POR CONFIRMAR Q11), "A nivel nacional" (Q12); texto real en .sr-only y copia
+   aria-hidden; src/scripts/placa.js decodifica una vez las cifras [data-placa-dig] en sus cajas fijas. */
+import Button from '../ui/Button.astro';
+import { home, wa, claims, legal } from '../../data/site.js';
+import { asset } from '../../lib/url.js';
+
+// "Refrigeración industrial y comercial:" va como antetítulo dentro del mismo H1 (un solo H1, texto intacto para SEO). Los dos puntos
+// quedan solo para el lector de pantalla: a la vista colgaban al final de la línea.
+const cut = home.h1.indexOf(': ');
+const pre = cut > 0 ? home.h1.slice(0, cut + 1) : '';
+const lema = cut > 0 ? home.h1.slice(cut + 2) : home.h1;
+const sub = home.subtitle.split(' | ');
+// "24/7" → cajas "24" y "7" con la "/" fija entre ellas: el decode solo toca cifras (antes la "/" también giraba: "2227")
+const support = claims.support24 ? claims.support24.num.split(/(\d+)/).filter(Boolean) : [];
+const years = claims.years && { digits: claims.years.num.replace(/\D.*$/, ''), rest: claims.years.num.replace(/^\d+/, '') };
+
+// ventiladores del frente (cx en la cara de 360×220) y aspas (grados)
+const fans = [95, 265];
+const blades = [0, 90, 180, 270];
+// codos de retorno (horquillas) en la placa lateral del serpentín
+const bends = [24, 44, 64, 84, 104, 124, 144];
+---
+<section id="inicio" class="section hero" data-theme="light" aria-labelledby="inicio-title">
+  <div class="container hero__grid">
+    <div class="hero__txt">
+      <h1 id="inicio-title" class="hero__h1">
+        {pre && <span class="hero__pre">{pre.slice(0, -1)}<span class="sr-only">:</span>{' '}</span>}<span class="hero__lema">{lema}</span>
+      </h1>
+      <p class="hero__sub">{sub.map((t) => <><span>{t}</span>{' '}</>)}</p>
+      <div class="btn-row"><Button href={wa('servicios', home.waText)} size="lg" icon="whatsapp" iconPosition="start">{home.cta}</Button></div>
+    </div>
+
+    <div class="hero__fig">
+      <div class="panel-hielo">
+        <svg class="uc" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
+          <defs>
+            <pattern id="hero-aletas" width="5" height="8" patternUnits="userSpaceOnUse"><path class="uc__aleta" d="M2.5 0V8" /></pattern>
+          </defs>
+          <!-- encuadre: el dibujo arriba a la derecha, el ángulo inferior izquierdo libre para la placa -->
+          <g transform="translate(46 8) scale(.9)">
+          <!-- losa -->
+          <polygon class="uc__losa-top" points="238,250 584.4,450 376.6,570 30.2,370" />
+          <polygon class="uc__losa-a" points="30.2,370 376.6,570 376.6,584 30.2,384" />
+          <polygon class="uc__losa-b" points="376.6,570 584.4,450 584.4,464 376.6,584" />
+          <!-- tapa -->
+          <g transform="matrix(.866 .5 .866 -.5 64.8 150)">
+            <rect class="uc__tapa" width="360" height="200" />
+            <rect class="uc__fino" x="14" y="14" width="332" height="172" />
+          </g>
+          <!-- lateral: serpentín con aletas, horquillas y conexiones -->
+          <g transform="matrix(.866 -.5 0 1 376.6 330)">
+            <rect class="uc__lado" width="200" height="220" />
+            <rect class="uc__base" y="204" width="200" height="16" />
+            <rect class="uc__cara" x="10" y="12" width="26" height="148" />
+            {bends.map((t) => <path class="uc__fino" d={`M36 ${t - 7}h-12a7 7 0 0 0 0 14h12`} />)}
+            <rect class="uc__aletas" x="40" y="12" width="150" height="148" />
+            <rect class="uc__hueco" x="10" y="166" width="180" height="32" />
+            <circle class="uc__cara" cx="34" cy="180" r="11" />
+            <circle class="uc__cara" cx="70" cy="186" r="6" />
+          </g>
+          <!-- frente: dos ventiladores con su rejilla; detrás, las aletas del serpentín -->
+          <g transform="matrix(.866 .5 0 1 64.8 150)">
+            <rect class="uc__cara" width="360" height="220" />
+            <rect class="uc__base" y="204" width="360" height="16" />
+            {fans.map((cx) => (
+              <g transform={`translate(${cx} 102)`}>
+                <circle class="uc__aro" r="78" />
+                <circle class="uc__hueco" r="70" />
+                <circle class="uc__aletas" r="70" />
+                {blades.map((a) => <path class="uc__aspa" transform={`rotate(${a})`} d="M-5-11C-20-28-24-48-11-62C3-68 20-61 24-50C17-34 10-21 6-11Z" />)}
+                <circle class="uc__buje" r="11" />
+                <circle class="uc__cara" r="4" />
+                <path class="uc__rejilla" d="M-70 0H70M0-70V70" />
+                {[62, 52, 42, 32, 22].map((r) => <circle class="uc__rejilla" r={r} />)}
+              </g>
+            ))}
+            {[[8, 8], [352, 8], [8, 196], [352, 196]].map(([x, y]) => <circle class="uc__tornillo" cx={x} cy={y} r="2.2" />)}
+          </g>
+          <!-- silueta -->
+          <path class="uc__silueta" d="M64.8 150 238 50 549.8 230V450L376.6 550 64.8 370Z" />
+          <!-- tubería: línea de líquido (desnuda) y succión (aislada, con juntas del aislante); salen del lateral y suben -->
+          <g class="uc__tubos">
+            <path class="uc__liq-a" d="M437.2 481 600 575V-20" />
+            <path class="uc__liq-b" d="M437.2 481 600 575V-20" />
+            <path class="uc__suc-a" d="M406 491 579.2 591V-20" />
+            <path class="uc__suc-b" d="M406 491 579.2 591V-20" />
+            <path class="uc__suc-c" d="M406 491 579.2 591V-20" />
+          </g>
+          </g>
+        </svg>
+        <img class="panel-hielo__frost" src={asset('img/frost.svg')} alt="" aria-hidden="true" width="400" height="300" decoding="async" />
+      </div>
+
+      <div class="placa">
+        <p class="placa__marca">{legal.company}</p>
+        <ul class="placa__datos" role="list">
+          {years && (
+            <li class="placa__dato">
+              <span class="sr-only">{claims.years.num} {claims.years.text}</span>
+              <span class="placa__num" aria-hidden="true"><span class="placa__dig placa__dig--2" data-placa-dig>{years.digits}</span><span class="placa__mas">{years.rest}</span></span>
+              <span class="placa__txt" aria-hidden="true">{claims.years.text}</span>
+            </li>
+          )}
+          {claims.support24 && (
+            <li class="placa__dato">
+              <span class="sr-only">{claims.support24.pre} {claims.support24.num}</span>
+              <span class="placa__num" aria-hidden="true">{support.map((p) => (/^\d+$/.test(p) ? <span class="placa__dig" style={`width:${p.length}ch`} data-placa-dig>{p}</span> : <span class="placa__dig">{p}</span>))}</span>
+              <span class="placa__txt" aria-hidden="true">{claims.support24.pre}</span>
+            </li>
+          )}
+          {claims.coverage && <li class="placa__dato placa__dato--ancho"><span class="placa__txt">{claims.coverage.text}</span></li>}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/placa.js';
+</script>
+
+<style>
+  .hero { padding-top: calc(var(--header-h) + clamp(28px, 6svh, 72px)); padding-bottom: clamp(64px, 8vw, 120px); }
+  .hero__grid { display: grid; gap: clamp(48px, 6vw, 88px); align-items: center; }
+
+  /* ---------- texto ---------- */
+  .hero__h1 { font-size: clamp(2.5rem, 1.2rem + 4.2vw, 5.25rem); line-height: 0.98; }
+  .hero__pre {
+    display: block; margin-bottom: 0.9rem;
+    font-stretch: var(--label-stretch); font-weight: 600; font-size: var(--step-1); line-height: 1.3; letter-spacing: 0.01em; color: var(--stroke);
+  }
+  .hero__pre::before { content: ''; display: inline-block; width: 28px; height: 3px; margin-right: 0.65em; vertical-align: 0.3em; background: var(--cyan); }
+  .hero__lema { display: block; }
+  .hero__lema::first-letter { text-transform: uppercase; }
+  .hero__sub {
+    margin-block: clamp(20px, 3svh, 32px) clamp(28px, 4svh, 44px);
+    font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; font-size: var(--step-1); line-height: 1.3; color: var(--muted);
+  }
+  /* separador decorativo (texto alternativo vacío). Al partirse la línea, el separador que queda al inicio cae fuera del clip-path */
+  .hero__sub { display: flex; flex-wrap: wrap; margin-left: -1.3em; clip-path: inset(0 0 0 1.3em); }
+  .hero__sub span { position: relative; margin-left: 1.3em; }
+  .hero__sub span::before { content: '|'; content: '|' / ''; position: absolute; left: -0.82em; font-weight: 400; color: color-mix(in srgb, var(--muted) 55%, transparent); }
+
+  /* ---------- gráfico ---------- */
+  .hero__fig { position: relative; width: 100%; max-width: 36rem; container-type: inline-size; margin-bottom: calc(var(--gutter) * 0.5); }
+  /* marco: .panel-hielo de base.css (compartido con las fichas). «acero» (MARCA §2.2): el aislante también pasa a acero */
+  :global([data-palette='acero']) .uc .uc__suc-b { stroke: color-mix(in srgb, var(--ink) 14%, var(--surface)); }
+  .uc { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .uc { --l: color-mix(in srgb, var(--ink) 78%, transparent); }
+  .uc :is(rect, circle, polygon, path) { stroke: var(--l); stroke-width: 1.1; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .uc__cara { fill: var(--surface); }
+  .uc__lado { fill: color-mix(in srgb, var(--ink) 9%, var(--surface)); }
+  .uc__tapa { fill: color-mix(in srgb, var(--cyan) 6%, var(--surface)); }
+  .uc__base { fill: color-mix(in srgb, var(--ink) 16%, var(--surface)); }
+  .uc__hueco { fill: color-mix(in srgb, var(--ink) 20%, var(--surface)); }
+  .uc__aletas { fill: url(#hero-aletas); }
+  .uc .uc__aleta { stroke: color-mix(in srgb, var(--ink) 34%, transparent); stroke-width: 0.9; vector-effect: none; }
+  .uc__aro { fill: color-mix(in srgb, var(--ink) 6%, var(--surface)); }
+  .uc__aspa { fill: color-mix(in srgb, var(--ink) 34%, var(--surface)); }
+  .uc__buje { fill: var(--cyan); }
+  .uc .uc__rejilla { fill: none; stroke-width: 0.75; stroke: color-mix(in srgb, var(--ink) 62%, transparent); }
+  .uc .uc__fino { fill: none; stroke-width: 0.8; }
+  .uc__tornillo { fill: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
+  .uc .uc__silueta { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+  .uc__losa-top { fill: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+  .uc__losa-a { fill: color-mix(in srgb, var(--ink) 12%, var(--surface)); }
+  .uc__losa-b { fill: color-mix(in srgb, var(--ink) 18%, var(--surface)); }
+  /* tubos: trazo que escala con el dibujo (no non-scaling): contorno + relleno + juntas del aislante */
+  .uc .uc__tubos path { fill: none; vector-effect: none; stroke-linejoin: round; }
+  .uc .uc__liq-a { stroke: var(--l); stroke-width: 8; }
+  .uc .uc__liq-b { stroke: var(--surface); stroke-width: 5; }
+  .uc .uc__suc-a { stroke: var(--l); stroke-width: 22; }
+  .uc .uc__suc-b { stroke: color-mix(in srgb, var(--cyan) 30%, var(--surface)); stroke-width: 19.5; }
+  .uc .uc__suc-c { stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 19.5; stroke-dasharray: 1.4 34; }
+
+  /* ---------- placa de datos: chapa con remaches, fijada a la esquina inferior del gráfico ---------- */
+  .placa {
+    --rivet: color-mix(in srgb, var(--ink) 34%, var(--surface));
+    position: absolute; left: calc(var(--gutter) * -0.5); bottom: calc(var(--gutter) * -0.5);
+    max-width: calc(100% - var(--gutter) * 0.5); padding: clamp(10px, 2.6cqi, 14px) clamp(16px, 4cqi, 22px) clamp(12px, 2.8cqi, 16px);
+    border: 1px solid color-mix(in srgb, var(--ink) 24%, transparent); border-radius: var(--radius);
+    background:
+      radial-gradient(circle at 9px 9px, var(--rivet) 2.2px, transparent 2.9px),
+      radial-gradient(circle at calc(100% - 9px) 9px, var(--rivet) 2.2px, transparent 2.9px),
+      radial-gradient(circle at 9px calc(100% - 9px), var(--rivet) 2.2px, transparent 2.9px),
+      radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), var(--rivet) 2.2px, transparent 2.9px),
+      repeating-linear-gradient(90deg, transparent 0 2px, color-mix(in srgb, var(--ink) 2.5%, transparent) 2px 3px),
+      linear-gradient(165deg, var(--surface) 30%, color-mix(in srgb, var(--ink) 8%, var(--surface)));
+    box-shadow: inset 0 1px 0 var(--surface), 0 14px 28px -18px color-mix(in srgb, var(--ink) 55%, transparent);
+    color: var(--fg);
+    font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2;
+  }
+  .placa__marca { padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: var(--step--1); color: var(--muted); letter-spacing: 0.02em; }
+  .placa__datos { list-style: none; display: grid; grid-template-columns: auto auto; }
+  .placa__dato { display: flex; flex-direction: column; gap: 2px; padding: clamp(8px, 2.2cqi, 12px) clamp(14px, 4cqi, 22px) clamp(6px, 1.8cqi, 10px) 0; }
+  .placa__dato + .placa__dato:not(.placa__dato--ancho) { padding-left: clamp(14px, 4cqi, 22px); padding-right: 0; border-left: 1px solid var(--line); }
+  .placa__dato--ancho { grid-column: 1 / -1; padding: 8px 0 0; border-top: 1px solid var(--line); }
+  .placa__num { font-size: var(--step-3); font-size: clamp(1.6rem, 7.6cqi, 3rem); line-height: 1; letter-spacing: -0.01em; white-space: nowrap; }
+  .placa__mas { display: inline-block; font-size: 0.72em; vertical-align: 0.42em; margin-left: 0.04em; }
+  .placa__txt { font-size: var(--step--1); color: var(--muted); }
+  .placa__dato--ancho .placa__txt { font-size: var(--step-0); color: var(--fg); }
+  /* cajas fijas del decode (regla 12): el ancho no depende del glifo que muestre ScrambleText */
+  /* contain: layout alinea la caja por su borde inferior (línea base sintetizada): la "/" de 24/7 va en una caja igual (sin data-placa-dig)
+     para quedar a la misma altura que las cifras */
+  .placa__dig { display: inline-block; text-align: start; contain: layout paint; }
+  .placa__dig--2 { width: 2ch; }
+
+  @media (min-width: 960px) {
+    .hero { min-height: 100svh; display: grid; align-items: center; }
+    .hero__grid { grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); }
+    /* en pantallas bajas el gráfico cabe en el primer viewport (svh: no cambia tras la carga) */
+    .hero__fig { justify-self: end; width: min(100%, calc(100svh - var(--header-h) - 132px)); min-width: 340px; }
+  }
+</style>

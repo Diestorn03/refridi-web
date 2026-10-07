@@ -1,0 +1,64 @@
+---
+/*
+  Solo staging (Base.astro lo pinta cuando site.js `demo` es true): selector de paleta Azul rey | Grafito (ids feed | acero, MARCA §2.2)
+  como radiogroup. Tema claro con borde: el navy es campo solo en el pie (CONCEPTO §8).
+  Escribe html[data-palette], localStorage 'rf-palette' y ?palette= (replaceState). El estado inicial lo fija el script inline del head antes
+  del primer pintado, y el resaltado se pinta desde html[data-palette]: una recarga en Acero no parpadea.
+  ≥960 px: píldora abajo a la derecha del primer viewport (se va con el scroll, por debajo del header). <960 px: franja después del pie
+  (de 768 a 959 el gráfico del hero llega a esa esquina).
+  La marca "Vista previa" vive en el pie.
+*/
+const options = [['feed', 'Azul rey'], ['acero', 'Grafito']];
+---
+<div class="pal" data-theme="light" data-pal>
+  <span class="pal__tag" id="pal-tag">Paleta</span>
+  <div class="pal__seg" role="radiogroup" aria-labelledby="pal-tag">
+    {options.map(([id, label]) => (
+      <button type="button" role="radio" aria-checked={id === 'feed' ? 'true' : 'false'} tabindex={id === 'feed' ? 0 : -1} data-pal-opt={id}>{label}</button>
+    ))}
+  </div>
+</div>
+
+<script>
+  const box = document.querySelector('[data-pal]');
+  if (box) {
+    const btns = [...box.querySelectorAll('[data-pal-opt]')];
+    const sync = () => {
+      const cur = document.documentElement.getAttribute('data-palette') || 'feed';
+      btns.forEach((b) => { const on = b.dataset.palOpt === cur; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; });
+    };
+    const pick = (i, focus) => {
+      const id = btns[i].dataset.palOpt;
+      document.documentElement.setAttribute('data-palette', id);
+      try { localStorage.setItem('rf-palette', id); } catch (e) { /* storage bloqueado */ }
+      const u = new URL(location.href); u.searchParams.set('palette', id); history.replaceState(history.state, '', u);
+      sync();
+      if (focus) btns[i].focus();
+    };
+    btns.forEach((b, i) => b.addEventListener('click', () => pick(i)));
+    box.addEventListener('keydown', (e) => {
+      const i = btns.indexOf(document.activeElement);
+      const to = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: btns.length - 1 }[e.key];
+      if (i < 0 || to === undefined) return;
+      e.preventDefault();
+      pick((to + btns.length) % btns.length, true);
+    });
+    sync();
+  }
+</script>
+
+<style>
+  .pal { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 16px max(12px, env(safe-area-inset-bottom)); background: var(--bg); color: var(--fg); border-top: 1px solid var(--line); font-size: var(--step--1); }
+  /* ≥960 px: píldora en la esquina inferior derecha del PRIMER viewport (absolute, no fixed): se ve al abrir la página y se va con el
+     scroll (fija tapaba filas, tarjetas y el CTA de la ficha a 1366×640). z-index bajo el del header: al hacer scroll pasa por debajo.
+     Esa esquina está libre en hero y fichas (desde 960 px los dos ocupan el primer viewport entero; lo mide la sonda de QA). */
+  @media (min-width: 960px) {
+    .pal { position: absolute; z-index: var(--z-preview); top: calc(100svh - 12px); right: max(12px, env(safe-area-inset-right)); transform: translateY(-100%); gap: 8px; padding: 3px 3px 3px 12px; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  }
+  .pal__tag { font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .pal__seg { display: flex; gap: 2px; }
+  .pal button { min-height: var(--tap); min-width: var(--tap); padding: 0 12px; border-radius: var(--radius); font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; color: var(--fg); }
+  :global(html:not([data-palette='acero'])) .pal [data-pal-opt='feed'],
+  :global(html[data-palette='acero']) .pal [data-pal-opt='acero'] { background: var(--btn-bg); color: var(--btn-fg); }
+  :global(html:not(.js)) .pal { display: none; }
+</style>

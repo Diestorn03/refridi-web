@@ -1,0 +1,89 @@
+---
+/* #repuestos (light, MAPA §3 #6 · CONCEPTO §4 Táctil): rejilla de familias, nunca tira horizontal. Cada tarjeta abre el WhatsApp de
+   repuestos (Q3) con "¿Tienen disponible {familia}?". 2 columnas en móvil, 3 desde 900 px. Sin precios (§7). Íconos propios (Q8: sin fotos). */
+import Icon from '../ui/Icon.astro';
+import { spares, wa, waText } from '../../data/site.js';
+import { ext, nuevaPestana } from '../../lib/url.js';
+
+// Íconos de familia: 48×48, trazo, currentColor, decorativos. Dibujo propio (vista lateral, sin el remolino del isotipo).
+const glyph = {
+  motores: '<rect x="5" y="15" width="22" height="18" rx="2"/><path d="M10 15v18M14 15v18M27 21h3v6h-3M30 24h5M7 33v3h18v-3M35 24c0-6 1.2-11 3.5-14 1.2 3.5.8 9.5-3.5 14Zm0 0c0 6 1.2 11 3.5 14 1.2-3.5.8-9.5-3.5-14Z"/>',
+  valvulas: '<path d="M4 30h10M34 30h10M4 27v6M44 27v6M24 25v-3"/><rect x="14" y="25" width="20" height="10" rx="1.5"/><rect x="16" y="8" width="16" height="14" rx="1.5"/><path d="M20 12h8M20 15h8M20 18h8M32 12h3a2 2 0 0 1 2 2v2"/>',
+  filtros: '<path d="M4 24h6M38 24h6M10 24l4-7h20l4 7-4 7H14ZM19 24h10M26 21l3 3-3 3"/>',
+  compresores: '<path d="M12 38V22a12 10 0 0 1 24 0v16M12 27h24M9 38h30M14 38v3M34 38v3M36 25h4v-6h4M12 31H8v6"/>',
+  instrumentos: '<circle cx="24" cy="20" r="13"/><circle cx="24" cy="20" r="1.5"/><path d="m25 19 5.5-5.5M15 20h2M18.3 13.6l1.4 1.4M24 11v2M29.7 13.6 28.3 15M31 20h2M24 33v4M19 37h10M24 37v7"/>',
+  envios: '<path d="M24 6 40 14v20L24 42 8 34V14ZM8 14l16 8 16-8M24 22v20M16 10l16 8v6"/>',
+};
+---
+<section id="repuestos" class="section repuestos" data-theme="light" aria-labelledby="repuestos-title">
+  <div class="container">
+    <header class="section__head" data-reveal>
+      <p class="eyebrow">Repuestos y herramientas</p>
+      <h2 id="repuestos-title">Repuestos de refrigeración</h2>
+      <p class="lead">Elija la familia y consulte la disponibilidad por WhatsApp, directo con la línea de repuestos.</p>
+    </header>
+
+    <ul class="rep__grid" role="list" data-stagger>
+      {spares.families.map((f) => (
+        <li>
+          <a class="rep fila" href={wa('repuestos', waText.repuestosFamilia(f.ask))} {...ext}>
+            <svg class="rep__icon" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" set:html={glyph[f.id]} />
+            <h3 class="rep__name">{f.name}</h3>
+            {f.detail && <p class="rep__detail">{f.detail}</p>}
+            <span class="rep__go label">{spares.cta}<Icon name="arrow-up-right" size={18} class="rep__arrow" /></span>
+            <span class="sr-only"> por WhatsApp {nuevaPestana}</span>
+          </a>
+        </li>
+      ))}
+      <li>
+        <a class="rep rep--envio fila" href={wa('repuestos', waText.repuestos)} {...ext}>
+          <svg class="rep__icon" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" set:html={glyph.envios} />
+          <h3 class="rep__name">{spares.shipping}</h3>
+          <p class="rep__detail">¿Busca otra pieza? Escríbanos el modelo o la referencia.</p>
+          <span class="rep__go label">Consultar otra pieza<Icon name="arrow-up-right" size={18} class="rep__arrow" /></span>
+          <span class="sr-only"> por WhatsApp {nuevaPestana}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<style>
+  .rep__grid { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 20px); }
+  @media (min-width: 900px) { .rep__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .rep__grid > li { display: flex; }
+
+  .rep {
+    position: relative; isolation: isolate; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;
+    padding: clamp(16px, 2.2vw, 28px);
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  /* hover/foco: capa "hielo" que aparece (solo opacity) y la flecha avanza (solo transform) */
+  .rep::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; opacity: 0;
+    background: color-mix(in srgb, var(--cyan) 9%, var(--surface));
+    transition: opacity var(--d-1) var(--ease-brand);
+  }
+  .rep--envio { background: transparent; border-color: var(--stroke); }
+  .rep__icon { width: clamp(40px, 4vw, 52px); height: auto; margin-bottom: 0.5rem; color: var(--link); }
+  .rep__name {
+    font-size: clamp(1.05rem, 0.92rem + 0.7vw, 1.45rem); line-height: 1.12;
+    hyphens: auto; overflow-wrap: break-word; /* "deshidratadores" a 320 px */
+  }
+  .rep__detail { font-size: var(--step--1); line-height: 1.45; color: var(--muted); }
+  .rep__go {
+    display: inline-flex; align-items: center; gap: 0.35rem; margin-top: auto; padding-top: 0.75rem;
+    font-size: var(--step--1); color: var(--link);
+  }
+  .rep :global(.rep__arrow) { transition: transform var(--d-1) var(--ease-brand); }
+  @media (hover: hover) and (pointer: fine) {
+    .rep:hover::before { opacity: 1; }
+    .rep:hover :global(.rep__arrow) { transform: translate(0.4rem, -0.1rem); }
+  }
+  .rep:focus-visible::before { opacity: 1; }
+  .rep:focus-visible :global(.rep__arrow) { transform: translate(0.4rem, -0.1rem); }
+  @media (max-width: 479px) {
+    .rep__icon { margin-bottom: 0.25rem; }
+    .rep__go { padding-top: 0.5rem; }
+  }
+</style>

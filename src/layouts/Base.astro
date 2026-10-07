@@ -1,0 +1,134 @@
+---
+/*
+  Layout único (F0: solo la fundación lo edita). Props: title (completo, de MAPA §2a; si no lleva "Refridi" se le añade), description,
+  noindex (404), chrome (Header + Footer; la 404 puede apagarlo). Slots: default (dentro de <main>) y "head" (p. ej. el
+  <link rel="expect" href="#rotulo" blocking="render"> de la página que recibe el rótulo viajero).
+*/
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/figtree/wght.css';
+import 'lenis/dist/lenis.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/transitions.css';
+import archivoLatin from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
+import figtreeLatin from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
+import Header from '../components/chrome/Header.astro';
+import Footer from '../components/chrome/Footer.astro';
+import PaletteSwitch from '../components/chrome/PaletteSwitch.astro';
+import { brand, contact, social, lines, legal, demo } from '../data/site.js';
+import { url, asset } from '../lib/url.js';
+
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+  chrome?: boolean;
+}
+const { title, description = brand.description, noindex = false, chrome = true } = Astro.props;
+// staging (noindex): sin canonical ni og:url; un sitio que pide no indexarse no declara URL canónica (el sitemap tampoco se genera)
+const origin = Astro.site?.origin ?? '';
+const canonical = origin + Astro.url.pathname;
+const fullTitle = title.includes(brand.name) ? title : `${title} · ${brand.name}`;
+const home = origin ? origin + url() : undefined;
+
+// MAPA §4: un solo nodo HVACBusiness. Sin aggregateRating/review (pautas de Google), sin priceRange, sin geo (Q22), sin foundingDate (Q10),
+// sin logo/image hasta tener PNG del logo y foto real (Q7, Q8), sin la Academia como department hasta Q6.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HVACBusiness',
+  '@id': home ? `${home}#empresa` : undefined,
+  name: brand.name,
+  alternateName: brand.alternateName,
+  ...(legal.rif ? { legalName: legal.company, taxID: legal.rif } : {}),
+  description: brand.description,
+  url: home,
+  telephone: lines.servicios.ld,
+  email: contact.email,
+  address: { '@type': 'PostalAddress', streetAddress: contact.street, addressLocality: contact.city, addressRegion: contact.region, postalCode: contact.postalCode, addressCountry: contact.country },
+  openingHoursSpecification: contact.hours.map((h) => ({ '@type': 'OpeningHoursSpecification', dayOfWeek: h.days, opens: h.opens, closes: h.closes })),
+  areaServed: { '@type': 'Country', name: 'Venezuela' },
+  sameAs: [social.instagram, social.tiktok, social.facebook],
+  department: [{ '@type': 'Store', name: legal.company, telephone: lines.repuestos.ld, ...(contact.walkIn ? { address: { '@type': 'PostalAddress', streetAddress: contact.street, addressLocality: contact.city, addressRegion: contact.region, postalCode: contact.postalCode, addressCountry: contact.country } } : {}) }],
+};
+---
+<!doctype html>
+<html lang="es-VE" data-palette="feed">
+  <head>
+    <meta charset="utf-8" />
+    <!-- opt-in de las View Transitions EN LÍNEA: en un .css externo Chrome aborta la transición ("opt-in disabled") cada vez que la hoja
+         de la página nueva no está ya en memoria (medido en preview: home→ficha fallaba siempre). El resto de la capa sigue en transitions.css. -->
+    <style is:inline>@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {(demo || noindex) && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="theme-color" content="#edf6f9" />
+    <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
+    {origin && !noindex && !demo && <link rel="canonical" href={canonical} />}
+    <link rel="preload" href={archivoLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_VE" />
+    <meta property="og:site_name" content={brand.name} />
+    {origin && !demo && <meta property="og:url" content={canonical} />}
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline define:vars={{ demo }}>
+      // Antes del primer pintado (regla 1): html.js, html.calm ('rf-calm'), html.is-lite y la paleta (solo staging).
+      // Después, la capa de transición entre páginas (CONCEPTO §4 Transición). El storage puede lanzar: todo va en try/catch.
+      var d = document.documentElement, n = navigator, c = n.connection;
+      var mm = function (q) { return !!(window.matchMedia && matchMedia(q).matches); };
+      var ls = function (k, v) { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+      var ss = function (k, v) { try { return v === undefined ? sessionStorage.getItem(k) : v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} };
+      d.classList.add('js');
+      if (ls('rf-calm') === '1') d.classList.add('calm');
+      if (((n.hardwareConcurrency || 8) <= 4 && (n.deviceMemory || 8) <= 4) || (c && c.saveData)) d.classList.add('is-lite');
+      if (demo) {
+        var q = new URLSearchParams(location.search).get('palette');
+        if (q === 'feed' || q === 'acero') ls('rf-palette', q);
+        d.setAttribute('data-palette', (q === 'feed' || q === 'acero' ? q : ls('rf-palette')) === 'acero' ? 'acero' : 'feed');
+      }
+      // View Transitions entre documentos. Sin tipos de dirección (v1). reduced/calm: sin transición. lite: solo el fundido del root.
+      // Rótulo viajero: pageswap nombra el [data-rotulo] que está DENTRO del enlace pulsado, si ese enlace va al destino, y deja la ruta en
+      // sessionStorage; pagereveal nombra [data-rotulo-dest] solo si viene de ese clic. Header, menú, pie y atrás/adelante: solo el root
+      // (antes se elegía por URL y una fila fuera de pantalla entraba volando). Ambos nombres se quitan al terminar (nunca dos "rotulo").
+      var still = function () { return mm('(prefers-reduced-motion: reduce)') || d.classList.contains('calm'); };
+      var tag = function (el, vt) { el.style.viewTransitionName = 'rotulo'; vt.finished.finally(function () { el.style.viewTransitionName = ''; }); };
+      var lastA = null;
+      addEventListener('click', function (e) { lastA = e.target.closest ? e.target.closest('a[href]') : null; }, true);
+      addEventListener('pageswap', function (e) {
+        var vt = e.viewTransition, to = e.activation && e.activation.entry && e.activation.entry.url;
+        if (!vt) return;
+        if (still()) { vt.skipTransition(); return; }
+        if (!to || !lastA || d.classList.contains('is-lite')) return;
+        to = to.split('#')[0];
+        var el = lastA.href.split('#')[0] === to && lastA.querySelector('[data-rotulo]');
+        if (el) { tag(el, vt); ss('rf-rotulo', new URL(to).pathname); }
+      });
+      addEventListener('pagereveal', function (e) {
+        var vt = e.viewTransition, want = ss('rf-rotulo');
+        ss('rf-rotulo', null);
+        if (!vt) return;
+        if (still()) { vt.skipTransition(); return; }
+        d.classList.add('vt');
+        var dest = want === location.pathname && !d.classList.contains('is-lite') && document.querySelector('[data-rotulo-dest]');
+        if (dest) tag(dest, vt);
+      });
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+    {chrome && <Header />}
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    {chrome && <Footer />}
+    {demo && <PaletteSwitch />}
+    <script>
+      import '../scripts/engine.js';
+    </script>
+  </body>
+</html>

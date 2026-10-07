@@ -1,0 +1,21 @@
+---
+// Home: orden y temas de MAPA §3 (sin #clientes: Q13/Q20 → la valoración va como una línea en #contacto).
+import Base from '../layouts/Base.astro';
+import Hero from '../components/home/Hero.astro';
+import Servicios from '../components/home/Servicios.astro';
+import Criterio from '../components/home/Criterio.astro';
+import Sectores from '../components/home/Sectores.astro';
+import Repuestos from '../components/home/Repuestos.astro';
+import Academia from '../components/home/Academia.astro';
+import Contacto from '../components/home/Contacto.astro';
+import { home } from '../data/site.js';
+---
+<Base title={home.title} description={home.description}>
+  <Hero />
+  <Servicios />
+  <Criterio />
+  <Sectores />
+  <Repuestos />
+  <Academia />
+  <Contacto />
+</Base>

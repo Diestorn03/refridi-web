@@ -1,0 +1,69 @@
+---
+/* Servicios (MAPA §3 fila 2, CONCEPTO §4 Táctil). Contrato: <section id="servicios" data-theme="light" aria-labelledby="servicios-title">,
+   hijo directo de <main>. Las 3 entradas de site.js como filas grandes: el nombre es el RÓTULO VIAJERO ([data-rotulo] dentro del <a href>
+   a /servicios/<slug>/; Base.astro lo nombra en pageswap). Debe tener el mismo cuerpo de letra que el [data-rotulo-dest] de la página de
+   servicio: los dos usan la clase global .rotulo de base.css (solo se traslada, no se deforma).
+   La fila entera es clicable (enlace estirado); el nombre del enlace es solo el del servicio. Hover (solo puntero fino) y :focus-visible:
+   la flecha avanza .4rem y aparece un ::before hielo. :active = "Asiento" de base.css (.fila). */
+import Icon from '../ui/Icon.astro';
+import { services } from '../../data/site.js';
+import { url } from '../../lib/url.js';
+---
+<section id="servicios" class="section servicios" data-theme="light" aria-labelledby="servicios-title">
+  <div class="container">
+    <div class="section__head">
+      <span class="eyebrow">Servicios</span>
+      <h2 id="servicios-title">Del cálculo del proyecto al mantenimiento de cada día</h2>
+      <p class="lead">Tres líneas de trabajo para cavas, cámaras y unidades de compresión. Cada una tiene su página con el alcance completo.</p>
+    </div>
+    <ul class="filas" role="list">
+      {services.map((s) => (
+        <li class="fila">
+          <h3 class="fila__titulo">
+            <a class="fila__link" href={url(`/servicios/${s.slug}/`)}><span class="rotulo" data-rotulo>{s.name}</span></a>
+          </h3>
+          <ul class="fila__trabajos" role="list">{s.trabajos.slice(0, 4).map((t) => <li>{t}</li>)}</ul>
+          <span class="fila__flecha" aria-hidden="true"><Icon name="arrow-right" size={32} stroke={1.25} /></span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .filas { list-style: none; border-top: 1px solid var(--line); }
+  .fila {
+    position: relative; isolation: isolate;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'titulo flecha' 'trabajos trabajos';
+    gap: 14px 24px; align-items: center; padding-block: clamp(24px, 3.2vw, 44px); border-bottom: 1px solid var(--line);
+  }
+  /* hielo: sangra hacia el margen para que el texto siga alineado con el encabezado */
+  .fila::before {
+    content: ''; position: absolute; inset: 0 calc(var(--gutter) * -0.5); z-index: -1;
+    background: color-mix(in srgb, var(--cyan) 12%, var(--surface)); opacity: 0;
+    transition: opacity var(--d-1) var(--ease-brand);
+  }
+  .fila__titulo { grid-area: titulo; }
+  .fila__link { color: var(--fg); }
+  .fila__link::after { content: ''; position: absolute; inset: 0; } /* enlace estirado: toda la fila */
+  .fila:active .fila__link::after { inset: -1.6%; } /* el hundido (scale .97) no deja el borde de la fila fuera del enlace (base.css) */
+  .fila__trabajos { grid-area: trabajos; list-style: none; display: grid; gap: 6px; color: var(--muted); font-size: var(--step-0); line-height: 1.4; }
+  .fila__trabajos li { position: relative; padding-left: 18px; }
+  .fila__trabajos li::before { content: ''; position: absolute; left: 0; top: 0.68em; width: 8px; height: 2px; background: var(--cyan); }
+  .fila__flecha { grid-area: flecha; display: grid; place-items: center; width: var(--tap); height: var(--tap); color: var(--link); transition: transform var(--d-1) var(--ease-brand); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .fila:hover::before { opacity: 1; }
+    .fila:hover .fila__flecha { transform: translateX(0.4rem); }
+  }
+  /* :focus-visible igual que hover, y el anillo rodea la fila entera (sin :has queda el anillo del enlace de base.css) */
+  @supports selector(:has(*)) {
+    .fila__link:focus-visible { outline: none; }
+    .fila:has(.fila__link:focus-visible)::before { opacity: 1; outline: 3px solid var(--stroke); outline-offset: -3px; }
+    .fila:has(.fila__link:focus-visible) .fila__flecha { transform: translateX(0.4rem); }
+  }
+
+  @media (min-width: 900px) {
+    .fila { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto; grid-template-areas: 'titulo trabajos flecha'; column-gap: clamp(24px, 4vw, 64px); }
+  }
+</style>

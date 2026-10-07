@@ -1,0 +1,153 @@
+---
+/*
+  Cabecera (MAPA §3 Chrome; PREPARACION §2 Header). Sólida, sin efecto cristal. Toma el tema ([data-theme]) del bloque que tiene debajo
+  (banda de 2 px a media altura, IntersectionObserver: src/scripts/chrome.js), sin transición: el cambio de tema es un corte recto.
+  Se oculta al bajar y vuelve al subir (solo transform); con foco de teclado dentro vuelve a mostrarse.
+  ≥900 px: anclas del home + desplegable <details> con las 3 páginas de servicio. <900 px: menú en <dialog> modal (fundido y 1rem).
+  Un solo CTA: WhatsApp de servicios, con el waText de la página (MAPA §2b). <900 px queda en icono (44×44, nombre para lectores de
+  pantalla): así el CTA del hero es el único botón con texto del primer viewport (CONCEPTO §4).
+  Contrato que NO cambia: primer `body > header` (transitions.css le da view-transition-name: cabecera), fijo, alto var(--header-h),
+  z-index var(--z-header).
+*/
+import Logo from './Logo.astro';
+import Button from '../ui/Button.astro';
+import Icon from '../ui/Icon.astro';
+import { nav, services, wa } from '../../data/site.js';
+import { url } from '../../lib/url.js';
+import { waPagina } from './wa-pagina.js';
+
+const here = Astro.url.pathname;
+const waHref = wa('servicios', waPagina(here));
+const [todos, ...anchors] = nav; // nav[0] = Servicios (/#servicios)
+const pages = services.map((s) => ({ href: url(`/servicios/${s.slug}/`), label: s.name }));
+const current = (href: string) => (href === here ? 'page' : undefined);
+---
+<header class="cabecera" data-theme="light" data-cabecera>
+  <div class="container cabecera__in">
+    <a class="cabecera__home" href={url()} aria-label="Refridi, inicio"><Logo size={36} /></a>
+
+    <nav class="cabecera__nav" aria-label="Principal">
+      <ul>
+        <li class="srv">
+          <details data-srv>
+            <summary>{todos.label}</summary>
+            <ul class="srv__panel">
+              {pages.map((p) => <li><a href={p.href} aria-current={current(p.href)}>{p.label}</a></li>)}
+              <li class="srv__todos"><a href={url(todos.path)}>Ver todos los servicios</a></li>
+            </ul>
+          </details>
+        </li>
+        {anchors.map((n) => <li><a href={url(n.path)}>{n.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <Button class="cabecera__wa" href={waHref} size="sm" icon="whatsapp" iconPosition="start">WhatsApp</Button>
+    <button class="cabecera__burger" type="button" data-menu-open aria-haspopup="dialog" aria-controls="menu" aria-expanded="false">
+      <Icon name="menu" size={24} label="Abrir menú" />
+    </button>
+  </div>
+
+  <dialog id="menu" class="menu" data-theme="light" aria-label="Menú">
+    <div class="container menu__top">
+      <Logo size={36} />
+      <button class="menu__close" type="button" data-menu-close><Icon name="close" size={24} label="Cerrar menú" /></button>
+    </div>
+    <nav class="container" aria-label="Principal">
+      <ul class="menu__list">
+        <li>
+          <a href={url(todos.path)}>{todos.label}</a>
+          <ul class="menu__sub">
+            {pages.map((p) => <li><a href={p.href} aria-current={current(p.href)}>{p.label}</a></li>)}
+          </ul>
+        </li>
+        {anchors.map((n) => <li><a href={url(n.path)}>{n.label}</a></li>)}
+      </ul>
+    </nav>
+    <div class="container menu__foot">
+      <Button href={waHref} size="lg" icon="whatsapp" iconPosition="start">Escribir por WhatsApp</Button>
+    </div>
+  </dialog>
+</header>
+
+<script>
+  import '../../scripts/chrome.js';
+</script>
+
+<style>
+  .cabecera {
+    position: fixed; inset: 0 0 auto; z-index: var(--z-header); height: var(--header-h);
+    background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line);
+    transition: transform var(--d-2) var(--ease-brand);
+  }
+  .cabecera.is-hidden { transform: translateY(-100%); }
+  .cabecera.is-hidden:has(:focus-visible) { transform: none; } /* foco de teclado dentro: vuelve (un foco dejado por un clic no la fija) */
+  .cabecera__in { height: 100%; display: flex; align-items: center; gap: 8px; }
+  .cabecera__home { display: inline-flex; align-items: center; min-height: var(--tap); margin-right: auto; border-radius: var(--radius); }
+
+  /* ---------- navegación de escritorio ---------- */
+  .cabecera__nav { display: none; }
+  .cabecera__nav > ul { display: flex; align-items: center; gap: 2px; list-style: none; }
+  .cabecera__nav a, .srv summary {
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--tap); padding: 0 12px; border-radius: var(--radius);
+    font-weight: 500; color: var(--fg); cursor: pointer;
+  }
+  .cabecera__nav a[aria-current] { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.3em; }
+  @media (hover: hover) and (pointer: fine) {
+    .cabecera__nav a:hover, .srv summary:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.3em; }
+  }
+  .srv { position: relative; }
+  .srv summary { list-style: none; }
+  .srv summary::-webkit-details-marker { display: none; }
+  /* chevron: dos filetes; gira al abrir (transform) */
+  .srv summary::after { content: ''; width: 0.45em; height: 0.45em; margin-top: -0.2em; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); transition: transform var(--d-1) var(--ease-brand); }
+  .srv details[open] summary::after { transform: translateY(0.2em) rotate(-135deg); }
+  .srv__panel {
+    position: absolute; top: calc(100% + (var(--header-h) - var(--tap)) / 2); left: 0; min-width: 18rem; padding: 8px; list-style: none;
+    background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    transition: opacity var(--d-1) var(--ease-brand), transform var(--d-1) var(--ease-brand);
+  }
+  @starting-style { details[open] > .srv__panel { opacity: 0; transform: translateY(-0.5rem); } }
+  .srv__panel a { display: flex; width: 100%; padding: 0 12px; font-family: var(--font-display); font-stretch: 100%; font-weight: 600; }
+  .srv__todos { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+  .srv__todos a { font-family: var(--font-body); font-weight: 500; color: var(--link); }
+
+  /* ---------- CTA y botón de menú ---------- */
+  .cabecera :global(.cabecera__wa) { flex: none; }
+  .cabecera__burger { display: inline-flex; align-items: center; justify-content: center; width: var(--tap); height: var(--tap); border-radius: var(--radius); color: var(--fg); }
+  @media (max-width: 899px) {
+    /* el botón queda en icono; el nombre sigue para lectores de pantalla */
+    .cabecera :global(.cabecera__wa) { padding: 0; width: var(--tap); }
+    .cabecera :global(.cabecera__wa .btn__label) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  }
+  @media (min-width: 900px) {
+    .cabecera__in { gap: 16px; }
+    .cabecera__nav { display: block; }
+    .cabecera__burger { display: none; }
+  }
+  /* sin JS no hay menú modal: quedan logo y CTA (el pie lleva toda la navegación) */
+  :global(html:not(.js)) .cabecera__burger { display: none; }
+
+  /* ---------- menú móvil: <dialog> modal; entra y sale con fundido y 1rem (sin círculo ni cortina) ---------- */
+  .menu {
+    position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0 0 max(24px, env(safe-area-inset-bottom));
+    border: 0; overflow-y: auto; background: var(--bg); color: var(--fg);
+    display: flex; flex-direction: column;
+    opacity: 0; transform: translateY(1rem);
+    transition: opacity var(--d-2) var(--ease-brand), transform var(--d-2) var(--ease-brand), overlay var(--d-2) allow-discrete, display var(--d-2) allow-discrete;
+  }
+  .menu:not([open]) { display: none; }
+  .menu[open] { opacity: 1; transform: none; }
+  @starting-style { .menu[open] { opacity: 0; transform: translateY(1rem); } }
+  .menu::backdrop { background: transparent; }
+  .menu__top { display: flex; align-items: center; justify-content: space-between; flex: none; height: var(--header-h); }
+  .menu__close { display: inline-flex; align-items: center; justify-content: center; width: var(--tap); height: var(--tap); border-radius: var(--radius); }
+  .menu__list { list-style: none; margin-top: 16px; }
+  .menu__list > li { border-top: 1px solid var(--line); }
+  .menu__list > li:last-child { border-bottom: 1px solid var(--line); }
+  .menu__list > li > a { display: flex; align-items: center; min-height: 56px; font-family: var(--font-display); font-stretch: var(--display-stretch); font-weight: 760; font-size: var(--step-3); line-height: 1.05; }
+  .menu__sub { list-style: none; margin: -4px 0 12px; }
+  .menu__sub a { display: flex; align-items: center; min-height: var(--tap); font-family: var(--font-display); font-stretch: 100%; font-weight: 600; color: var(--muted); }
+  .menu__list a[aria-current] { color: var(--link); text-decoration: underline; text-underline-offset: 0.25em; }
+  .menu__foot { margin-top: auto; padding-top: 24px; }
+  .menu__foot :global(.btn) { width: 100%; }
+</style>

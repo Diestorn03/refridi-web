@@ -1,0 +1,29 @@
+---
+// 404 (MAPA §5): noindex, fuera del sitemap. H1, los 3 servicios, repuestos, contacto y WhatsApp con su waText.
+import Base from '../layouts/Base.astro';
+import Button from '../components/ui/Button.astro';
+import { services, wa, waText } from '../data/site.js';
+import { url } from '../lib/url.js';
+---
+<Base title="Página no encontrada · Refridi" description="Esta página no existe." noindex>
+  <section id="no-encontrada" class="section nf" data-theme="light" aria-labelledby="nf-title">
+    <div class="container">
+      <p class="eyebrow">Error 404</p>
+      <h1 id="nf-title">Esta página no existe</h1>
+      <p class="lead">Puede que el enlace esté roto o que la página se haya movido. Estas sí existen:</p>
+      <ul class="nf__links">
+        {services.map((s) => <li><a class="link" href={url(`/servicios/${s.slug}/`)}>{s.name}</a></li>)}
+        <li><a class="link" href={url('/#repuestos')}>Repuestos</a></li>
+        <li><a class="link" href={url('/#contacto')}>Contacto</a></li>
+      </ul>
+      <div class="btn-row"><Button href={wa('servicios', waText.notFound)} icon="whatsapp" iconPosition="start">Escribir por WhatsApp</Button></div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf { min-height: 100svh; padding-top: calc(var(--header-h) + var(--section-y) * 0.6); }
+  .nf .lead { margin-block: 1.25rem 1rem; }
+  .nf__links { list-style: none; display: grid; gap: 4px; margin-bottom: 2rem; }
+  .nf__links a { display: inline-flex; align-items: center; min-height: var(--tap); }
+</style>

@@ -1,0 +1,78 @@
+---
+/* #academia (light, MAPA §3 #7): sección corta. ARIR, los 3 programas (sin precio, fechas ni instructores: Q6), la cita literal de
+   IG DV9w2lTDlk4, enlace a @arir_ve y CTA "Pedir la próxima fecha" al WhatsApp de la academia (Q3). */
+import Button from '../ui/Button.astro';
+import Icon from '../ui/Icon.astro';
+import { academy, social, wa } from '../../data/site.js';
+import { ext, nuevaPestana } from '../../lib/url.js';
+
+// Detalle de cada programa, alineado con academy.programs. [cliente · IG DdUkv8dFu1P, DXp3QJuFMih, DXE-G0FjnyB]
+const detail = [
+  'Los fundamentos del oficio, con certificado.',
+  'CO2, hidrocarburos, amoníaco, psicrometría y seguridad.',
+  'Ciclos subcríticos y transcríticos.',
+];
+const programs = academy.programs.map((p, i) => {
+  const [name, topics] = p.split(': ');
+  return { name, text: topics ? `${topics[0].toUpperCase()}${topics.slice(1)}. ${detail[i]}` : detail[i] };
+});
+---
+<section id="academia" class="section academia" data-theme="light" aria-labelledby="academia-title">
+  <div class="container academia__grid">
+    <header class="academia__head" data-reveal>
+      <p class="eyebrow">Cursos y capacitaciones</p>
+      <h2 id="academia-title">{academy.name}</h2>
+      <p class="lead">Formación para técnicos de refrigeración en Maracay, desde lo básico hasta el perfeccionamiento.</p>
+    </header>
+
+    <ul class="academia__cursos" role="list" data-stagger>
+      {programs.map((p) => (
+        <li>
+          <h3 class="academia__curso">{p.name}</h3>
+          <p class="muted">{p.text}</p>
+        </li>
+      ))}
+    </ul>
+
+    <p class="academia__cita" data-reveal>
+      <q cite="https://www.instagram.com/p/DV9w2lTDlk4/">{academy.attendance}</q>
+      <span>asistieron a una capacitación de la academia junto a FONDOIN.</span>
+    </p>
+
+    <div class="btn-row academia__cta" data-reveal>
+      <Button href={wa('academia', academy.waText)} icon="whatsapp" iconPosition="start">{academy.cta}</Button>
+      <a class="academia__ig link" href={social.arir} {...ext}>
+        <Icon name="instagram" size={20} />{social.arirHandle}<span class="sr-only"> en Instagram {nuevaPestana}</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .academia__grid { display: grid; gap: clamp(28px, 4vw, 48px); }
+  @media (min-width: 900px) {
+    .academia__grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: clamp(40px, 6vw, 96px);
+      grid-template-areas: 'head cursos' 'cita cursos' 'cta cursos';
+      align-items: start;
+    }
+    .academia__head { grid-area: head; }
+    .academia__cursos { grid-area: cursos; }
+    .academia__cita { grid-area: cita; }
+    .academia__cta { grid-area: cta; }
+  }
+  .academia__head .lead { margin-top: 1.25rem; }
+
+  .academia__cursos { list-style: none; border-top: 1px solid var(--line); }
+  .academia__cursos > li { display: grid; gap: 0.35rem; padding-block: clamp(18px, 2.4vw, 28px); border-bottom: 1px solid var(--line); }
+  .academia__curso { font-size: var(--step-2); }
+
+  /* la cita, con la barra cian del isotipo (decorativa: el cian nunca es texto sobre claro) */
+  .academia__cita { padding-left: 1.25rem; border-left: 3px solid var(--cyan); max-width: 34rem; color: var(--muted); }
+  .academia__cita q {
+    display: block; margin-bottom: 0.4rem; color: var(--fg);
+    /* step-2, no step-3: un "40" gigante aquí competía con el "40+ Años" de la placa del hero (otro significado) */
+    font-family: var(--font-display); font-stretch: var(--display-stretch); font-weight: 760; font-size: var(--step-2); line-height: 1.1;
+  }
+  .academia__ig { display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--tap); font-weight: 600; }
+</style>
