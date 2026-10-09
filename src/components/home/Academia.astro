@@ -1,9 +1,17 @@
 ---
 /* #academia (light, MAPA §3 #7): sección corta. ARIR, los 3 programas (sin precio, fechas ni instructores: Q6), la cita literal de
-   IG DV9w2lTDlk4, enlace a @arir_ve y CTA "Pedir la próxima fecha" al WhatsApp de la academia (Q3). */
+   IG DV9w2lTDlk4, enlace a @arir_ve y CTA "Pedir la próxima fecha" al WhatsApp de la academia (Q3).
+   Foto [cliente · IG DXE-G0FjnyB]: una clase de ARIR (4:3). Desde 900 px, dos columnas que no comparten filas: titular y foto a la
+   izquierda; cursos, cita y CTA a la derecha. En móvil, la foto va tras el titular. POR CONFIRMAR Q21: instructores y participantes.
+   Movimiento v2 "Aula en dos planos" (MOVIMIENTO-V2 §5.6), todo CSS dentro de la puerta única (§4.1): desde 900 px las columnas van a
+   distinta velocidad con el timeline --aula; foto en Vidrio (paso); H2 que se contrae (contrae.js); cursos escalonados con su regla
+   inferior que se tiende; barra cian de la cita que crece hacia abajo. Fuera de la puerta (reduced, calm, lite, sin view()): estática,
+   con reglas y barra completas. */
 import Button from '../ui/Button.astro';
 import Icon from '../ui/Icon.astro';
+import Vidrio from '../ui/Vidrio.astro';
 import { academy, social, wa } from '../../data/site.js';
+import { fotos } from '../../data/fotos.js';
 import { ext, nuevaPestana } from '../../lib/url.js';
 
 // Detalle de cada programa, alineado con academy.programs. [cliente · IG DdUkv8dFu1P, DXp3QJuFMih, DXE-G0FjnyB]
@@ -19,60 +27,96 @@ const programs = academy.programs.map((p, i) => {
 ---
 <section id="academia" class="section academia" data-theme="light" aria-labelledby="academia-title">
   <div class="container academia__grid">
-    <header class="academia__head" data-reveal>
-      <p class="eyebrow">Cursos y capacitaciones</p>
-      <h2 id="academia-title">{academy.name}</h2>
-      <p class="lead">Formación para técnicos de refrigeración en Maracay, desde lo básico hasta el perfeccionamiento.</p>
-    </header>
+    <div class="academia__col">
+      <header>
+        <p class="eyebrow">Cursos y capacitaciones</p>
+        <h2 id="academia-title" data-contrae>{academy.name}</h2>
+        <p class="lead" data-reveal>Formación para técnicos de refrigeración en Maracay, desde lo básico hasta el perfeccionamiento.</p>
+      </header>
+      {/* sizes: el contenedor (92vw) en móvil; 5/12 de la fila desde 900 px (38vw, hasta 490px) */}
+      <div data-reveal style="--i:1">
+        <Vidrio img={fotos.academia} ar="4/3" sizes="(min-width: 900px) min(38vw, 490px), 92vw" />
+      </div>
+    </div>
 
-    <ul class="academia__cursos" role="list" data-stagger>
-      {programs.map((p) => (
-        <li>
-          <h3 class="academia__curso">{p.name}</h3>
-          <p class="muted">{p.text}</p>
-        </li>
-      ))}
-    </ul>
+    <div class="academia__col">
+      <ul class="academia__cursos" role="list" data-stagger>
+        {programs.map((p) => (
+          <li>
+            <h3 class="academia__curso">{p.name}</h3>
+            <p class="muted">{p.text}</p>
+          </li>
+        ))}
+      </ul>
 
-    <p class="academia__cita" data-reveal>
-      <q cite="https://www.instagram.com/p/DV9w2lTDlk4/">{academy.attendance}</q>
-      <span>asistieron a una capacitación de la academia junto a FONDOIN.</span>
-    </p>
+      <p class="academia__cita" data-reveal>
+        <q cite="https://www.instagram.com/p/DV9w2lTDlk4/">{academy.attendance}</q>
+        <span>asistieron a una capacitación de la academia junto a FONDOIN.</span>
+      </p>
 
-    <div class="btn-row academia__cta" data-reveal>
-      <Button href={wa('academia', academy.waText)} icon="whatsapp" iconPosition="start">{academy.cta}</Button>
-      <a class="academia__ig link" href={social.arir} {...ext}>
-        <Icon name="instagram" size={20} />{social.arirHandle}<span class="sr-only"> en Instagram {nuevaPestana}</span>
-      </a>
+      <div class="btn-row academia__cta" data-reveal>
+        <Button href={wa('academia', academy.waText)} icon="whatsapp" iconPosition="start">{academy.cta}</Button>
+        <a class="academia__ig link" href={social.arir} {...ext}>
+          <Icon name="instagram" size={20} />{social.arirHandle}<span class="sr-only"> en Instagram {nuevaPestana}</span>
+        </a>
+      </div>
     </div>
   </div>
 </section>
 
+<script>
+  import '../../scripts/contrae.js';
+</script>
+
 <style>
-  .academia__grid { display: grid; gap: clamp(28px, 4vw, 48px); }
+  .academia__grid, .academia__col { display: grid; gap: clamp(28px, 4vw, 48px); }
   @media (min-width: 900px) {
-    .academia__grid {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: clamp(40px, 6vw, 96px);
-      grid-template-areas: 'head cursos' 'cita cursos' 'cta cursos';
-      align-items: start;
-    }
-    .academia__head { grid-area: head; }
-    .academia__cursos { grid-area: cursos; }
-    .academia__cita { grid-area: cita; }
-    .academia__cta { grid-area: cta; }
+    .academia__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: clamp(40px, 6vw, 96px); align-items: start; }
   }
-  .academia__head .lead { margin-top: 1.25rem; }
+  .academia .lead { margin-top: 1.25rem; }
 
   .academia__cursos { list-style: none; border-top: 1px solid var(--line); }
-  .academia__cursos > li { display: grid; gap: 0.35rem; padding-block: clamp(18px, 2.4vw, 28px); border-bottom: 1px solid var(--line); }
+  /* la regla inferior es un ::after (no border) para poder tenderla con scale */
+  .academia__cursos > li { position: relative; display: grid; gap: 0.35rem; padding-block: clamp(18px, 2.4vw, 28px); }
+  .academia__cursos > li::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; background: var(--line); transform-origin: left; }
   .academia__curso { font-size: var(--step-2); }
 
   /* la cita, con la barra cian del isotipo (decorativa: el cian nunca es texto sobre claro) */
-  .academia__cita { padding-left: 1.25rem; border-left: 3px solid var(--cyan); max-width: 34rem; color: var(--muted); }
+  .academia__cita { position: relative; padding-left: 1.25rem; max-width: 34rem; color: var(--muted); }
+  .academia__cita::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--cyan); transform-origin: top; }
   .academia__cita q {
     display: block; margin-bottom: 0.4rem; color: var(--fg);
     /* step-2, no step-3: un "40" gigante aquí competía con el "40+ Años" de la placa del hero (otro significado) */
     font-family: var(--font-display); font-stretch: var(--display-stretch); font-weight: 760; font-size: var(--step-2); line-height: 1.1;
   }
   .academia__ig { display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--tap); font-weight: 600; }
+
+  /* ---------- movimiento (MOVIMIENTO-V2 §5.6). Lo ligado al scroll va en linear; las reglas y la barra, en brand ----------
+     Dos planos: el titular y la foto quedan DETRÁS (más lentos que la página: de −9vh a +9vh) y cursos, cita y CTA DELANTE (más rápidos:
+     de +5vh a −5vh; revisión final de v2, antes ±5/∓3). La §5.6 escribe los signos al revés, que pone la foto delante; manda el "Qué se
+     ve" (foto por detrás). Tope: el 90 % de --section-y (min()), así nunca pisa #repuestos ni #contacto a ningún ancho ni alto (§5.6.1). Las reglas y la barra miden la caja de su fila con un
+     timeline con nombre (un ::after de 1 px daría un entry de 1 px). */
+  .academia { --detras: min(9vh, var(--section-y) * 0.9); --delante: min(5vh, var(--section-y) * 0.9); }
+  @keyframes aula-detras { from { translate: 0 calc(var(--detras) * -1); } to { translate: 0 var(--detras); } }
+  @keyframes aula-delante { from { translate: 0 var(--delante); } to { translate: 0 calc(var(--delante) * -1); } }
+  @keyframes aula-barra { from { scale: 1 0; } }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      @media (min-width: 900px) {
+        :global(:root:not(.calm):not(.is-lite)) .academia { view-timeline: --aula block; }
+        :global(:root:not(.calm):not(.is-lite)) .academia__col {
+          animation: aula-detras linear both; animation-duration: auto; animation-timeline: --aula; animation-range: cover 0% cover 100%;
+        }
+        :global(:root:not(.calm):not(.is-lite)) .academia__col + .academia__col { animation-name: aula-delante; }
+      }
+      :global(:root:not(.calm):not(.is-lite)) .academia__cursos > li { view-timeline: --curso block; }
+      :global(:root:not(.calm):not(.is-lite)) .academia__cursos > li::after {
+        animation: filete var(--ease-brand) both; animation-duration: auto; animation-timeline: --curso; animation-range: entry 40% cover 40%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .academia__cita { view-timeline: --cita block; }
+      :global(:root:not(.calm):not(.is-lite)) .academia__cita::before {
+        animation: aula-barra var(--ease-brand) both; animation-duration: auto; animation-timeline: --cita; animation-range: entry 20% cover 40%;
+      }
+    }
+  }
 </style>

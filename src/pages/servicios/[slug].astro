@@ -1,20 +1,31 @@
 ---
 /*
   Ficha de servicio (MAPA §3 "Plantilla de servicio"): #servicio → #alcance → #clave → #relacionados → #contacto (brand).
-  #proyectos se omite hasta tener casos y fotos (Q18, Q8). Datos: src/data/servicios.js (sobre site.js).
+  #proyectos se omite hasta tener casos (Q18). Datos: src/data/servicios.js (sobre site.js).
   Contrato: #servicio primero en <main>; el rótulo viajero [data-rotulo-dest] id="rotulo" con la clase global .rotulo (MISMO cuerpo de letra
   que el [data-rotulo] de la fila del home); <link rel="expect"> en el head para que exista cuando corre pagereveal. Si el H1 empieza por el
   nombre del servicio (mantenimiento, instalación), el rótulo ES la primera línea del H1 (texto del H1 intacto, sin repetir el nombre); si
   no (restauración), va encima como antetítulo. Las filas de #relacionados también llevan [data-rotulo]: de ficha a ficha viaja igual.
-  Sin data-reveal en el primer viewport (regla 13): #alcance puede asomar en él (390×844, 1440×900), así que tampoco lleva.
+  Sin data-reveal en el primer viewport (regla 13): #alcance puede asomar en él (390×844), así que tampoco lleva.
+  Movimiento v2 (MOVIMIENTO-V2 §6), la gramática del home, todo CSS dentro de la puerta única (§4.1) salvo la contracción (contrae.js):
+    #servicio      salida en planos como el hero: texto [data-plano=medio], figura [data-plano=lento] con la imagen en Vidrio modo salida
+                   (se acerca y se empaña; deshielo al cargar salvo llegada por VT). Con scrollY = 0 nada está trasladado: el rótulo
+                   aterriza sin salto. En instalación, el Equipo (ventiladores quietos: QA v2).
+    #alcance       ≥900 px: "Qué incluye" sticky mientras corre la lista. El check cristaliza y la regla inferior se tiende; el texto nunca se
+                   oculta (puede asomar en el primer viewport). H2 con contracción.
+    #clave         el texto se contrae línea a línea y su barra cian crece hacia abajo.
+    #relacionados  filas desde la derecha, escalonadas (se anima el li; el rótulo solo se traslada con él).
 */
 import Base from '../../layouts/Base.astro';
 import Button from '../../components/ui/Button.astro';
 import Icon from '../../components/ui/Icon.astro';
 import Contacto from '../../components/home/Contacto.astro';
+import Vidrio from '../../components/ui/Vidrio.astro';
+import Equipo from '../../components/ui/Equipo.astro';
 import { paginas } from '../../data/servicios.js';
 import { wa } from '../../data/site.js';
-import { url, asset } from '../../lib/url.js';
+import { fotos, sizesFicha } from '../../data/fotos.js';
+import { url } from '../../lib/url.js';
 
 export function getStaticPaths() {
   return paginas.map((service) => ({ params: { slug: service.slug }, props: { service } }));
@@ -49,24 +60,16 @@ const jsonLd = Astro.site && {
 const igCode = s.clave.source?.replace(/^IG /, '');
 const enH1 = s.h1.startsWith(s.name); // el rótulo abre el H1
 
-// Dibujo propio por servicio (Q8: sin fotos ni stock), en el mismo marco que el gráfico del home (.panel-hielo + escarcha) y de su misma
-// familia: caras rellenas por token y trazo de tinta. Estático y decorativo, en oblicua 28/−20. Solo desde 1024 px.
-// Rellenos: cara (frente) · tapa (cian) · lado (sombra) · hueco · capa (recubrimiento fenólico / puerta). Trazos: a = contorno ·
-// b = fino · c = aleta recubierta (--stroke) · k = cian del isotipo (decorativo).
-const caja = (front, top, side) => `<path class="cara" d="${front}"/><path class="tapa" d="${top}"/><path class="lado" d="${side}"/><path class="a" d="${front}${top}${side}"/>`;
-const fins = Array.from({ length: 32 }, (_, i) => `<path class="${i < 16 ? 'b' : 'c'}" d="M${62 + i * 8} 128v164"/>`).join('');
-const fan = (x) => `<circle class="hueco" cx="${x}" cy="210" r="40"/><circle class="k" cx="${x}" cy="210" r="40"/><circle class="b" cx="${x}" cy="210" r="28"/><circle class="b" cx="${x}" cy="210" r="16"/><path class="b" d="M${x - 40} 210h80M${x} 170v80"/><circle class="a cara" cx="${x}" cy="210" r="4"/>`;
-const draw = {
-  instalacion: `<path class="b" d="M24 340h352"/>${caja('M60 140h240v200H60z', 'M60 140l28-20h240l-28 20z', 'M300 140l28-20v200l-28 20z')}<path class="capa a" d="M200 340V190h70v150"/><path class="a" d="M258 255v22"/>${caja('M110 82h100v50H110z', 'M110 82l14-10h100l-14 10z', 'M210 82l14-10v50l-14 10z')}<circle class="k" cx="140" cy="107" r="16"/><circle class="a" cx="140" cy="107" r="4"/><path class="b" d="M172 90v34M180 90v34M188 90v34M196 90v34"/>`,
-  mantenimiento: `<path class="b" d="M40 56h320"/><path class="a" d="M96 56v74M296 56v74"/>${caja('M40 150h290v120H40z', 'M40 150l28-20h290l-28 20z', 'M330 150l28-20v120l-28 20z')}${fan(115)}${fan(255)}<path class="a" d="M36 286h298M310 286v26"/>`,
-  restauracion: `${caja('M50 120h270v180H50z', 'M50 120l28-20h270l-28 20z', 'M320 120l28-20v180l-28 20z')}<path class="capa" d="M186 121h133v178H186z"/><path class="a" d="M50 140h-12a12 12 0 0 0 0 24h12M50 188h-12a12 12 0 0 0 0 24h12M50 236h-12a12 12 0 0 0 0 24h12"/>${fins}`,
-};
+// Imagen de la ficha, en Vidrio (modo salida, como el hero): la foto del servicio (fotos.js; mantenimiento, restauración) en 4:5 o, sin
+// foto (instalación: la del IG era de 640 px y Q18), el dibujo del equipo en un vidrio cuadrado. Solo desde 1024 px, donde la foto es el
+// LCP: eager + fetchpriority high, y desde={1024} evita que se descargue por debajo (la figura no se pinta).
+const foto = fotos[s.slug];
 ---
 <Base title={s.title} description={s.description}>
   <link slot="head" rel="expect" href="#rotulo" blocking="render" />
   {jsonLd && <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
 
-  <section id="servicio" class="section ficha" data-theme="light" aria-labelledby="servicio-title">
+  <section id="servicio" class="section ficha" data-theme="light" aria-labelledby="servicio-title" data-salida>
     <div class="container">
       <nav class="migas" aria-label="Ruta de navegación">
         <ol role="list">
@@ -76,7 +79,7 @@ const draw = {
         </ol>
       </nav>
       <div class="ficha__grid">
-        <div>
+        <div data-plano="medio">
           {enH1 ? (
             <h1 id="servicio-title"><span id="rotulo" class="rotulo ficha__rotulo" data-rotulo-dest>{s.name}</span>{s.h1.slice(s.name.length)}</h1>
           ) : (
@@ -88,9 +91,12 @@ const draw = {
           <p class="lead">{s.intro}</p>
           <div class="btn-row"><Button href={wa('servicios', s.waText)} size="lg" icon="whatsapp" iconPosition="start">{s.cta}</Button></div>
         </div>
-        <div class="ficha__fig panel-hielo" aria-hidden="true">
-          <svg class="dibujo" viewBox="12 12 376 376" fill="none" stroke-linecap="round" stroke-linejoin="round" focusable="false" set:html={draw[s.slug]} />
-          <img class="panel-hielo__frost" src={asset('img/frost.svg')} alt="" width="400" height="300" decoding="async" />
+        <div class:list={['ficha__fig', foto && 'ficha__fig--foto']} data-plano="lento">
+          {foto ? (
+            <Vidrio img={foto} modo="salida" ar="4/5" sizes={sizesFicha} desde={1024} loading="eager" fetchpriority="high" />
+          ) : (
+            <Vidrio modo="salida" ar="1/1"><Equipo /></Vidrio>
+          )}
         </div>
       </div>
     </div>
@@ -99,7 +105,7 @@ const draw = {
   <section id="alcance" class="section ficha-sec" data-theme="light" aria-labelledby="alcance-title">
     <div class="container ficha__split">
       <header>
-        <h2 id="alcance-title" class="ficha__h2">Qué incluye</h2>
+        <h2 id="alcance-title" class="ficha__h2" data-contrae>Qué incluye</h2>
         <p class="lead">{s.alcance}</p>
       </header>
       <ul class="alcance" role="list">
@@ -112,12 +118,12 @@ const draw = {
     <div class="container ficha__rule">
       <h2 id="clave-title" class="eyebrow">El criterio</h2>
       {s.clave.quote ? (
-        <figure class="clave" data-reveal>
-          <blockquote cite={`https://www.instagram.com/p/${igCode}/`}><p class="clave__text">“{s.clave.text}”</p></blockquote>
+        <figure class="clave">
+          <blockquote cite={`https://www.instagram.com/p/${igCode}/`}><p class="clave__text" data-contrae>“{s.clave.text}”</p></blockquote>
           <figcaption class="muted">Refridi, en Instagram</figcaption>
         </figure>
       ) : (
-        <p class:list={['clave', 'clave__text', s.clave.text.length > 100 && 'clave__text--long']} data-reveal>{s.clave.text}</p>
+        <p class:list={['clave', 'clave__text', s.clave.text.length > 100 && 'clave__text--long']} data-contrae>{s.clave.text}</p>
       )}
     </div>
   </section>
@@ -125,7 +131,7 @@ const draw = {
   <section id="relacionados" class="section ficha-sec" data-theme="light" aria-labelledby="relacionados-title">
     <div class="container ficha__rule">
       <h2 id="relacionados-title" class="eyebrow">También puede necesitar</h2>
-      <ul class="rel" role="list" data-stagger>
+      <ul class="rel" role="list" data-stagger="lado">
         {s.relatedServices.map((r) => (
           <li>
             <a class="rel__fila fila" href={url(`/servicios/${r.slug}/`)}>
@@ -151,6 +157,10 @@ const draw = {
   <Contacto cta={s.cta} waText={s.waText} />
 </Base>
 
+<script>
+  import '../../scripts/contrae.js';
+</script>
+
 <style>
   /* Rótulo viajero: cuerpo de letra en la clase global .rotulo (base.css, el mismo que la fila del home). Aquí solo el color (allí --fg:
      el cruce de color es suave) y que sea bloque: width: fit-content → la caja es la del texto y solo se traslada. */
@@ -174,20 +184,10 @@ const draw = {
   .ficha__fig { display: none; }
   @media (min-width: 1024px) {
     .ficha__grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: clamp(40px, 5vw, 88px); align-items: center; }
-    /* como el gráfico del home: cabe en el primer viewport en pantallas bajas (svh: no cambia tras la carga) */
+    /* como la foto del home: cabe en el primer viewport en pantallas bajas (svh: no cambia tras la carga); la foto en 4:5, el mismo alto */
     .ficha__fig { display: block; width: min(100%, calc(100svh - var(--header-h) - 180px)); min-width: 320px; justify-self: end; }
+    .ficha__fig--foto { width: min(100%, calc((100svh - var(--header-h) - 180px) * 0.8)); min-width: 256px; }
   }
-  .dibujo { position: absolute; top: 5%; left: 5%; width: 90%; height: 90%; }
-  .dibujo :global(*) { vector-effect: non-scaling-stroke; }
-  .dibujo :global(.a) { stroke: color-mix(in srgb, var(--ink) 78%, transparent); stroke-width: 2; }
-  .dibujo :global(.b) { stroke: var(--muted); stroke-width: 1.25; opacity: 0.6; }
-  .dibujo :global(.c) { stroke: var(--stroke); stroke-width: 2; }
-  .dibujo :global(.k) { stroke: var(--cyan); stroke-width: 2; }
-  .dibujo :global(.cara) { fill: var(--surface); }
-  .dibujo :global(.tapa) { fill: color-mix(in srgb, var(--cyan) 12%, var(--surface)); }
-  .dibujo :global(.lado) { fill: color-mix(in srgb, var(--ink) 9%, var(--surface)); }
-  .dibujo :global(.hueco) { fill: color-mix(in srgb, var(--ink) 14%, var(--surface)); }
-  .dibujo :global(.capa) { fill: color-mix(in srgb, var(--cyan) 15%, var(--surface)); }
   .ficha-sec { padding-block: clamp(40px, 5vw, 80px); }
   .ficha .lead { margin-block: 1.5rem 2rem; }
 
@@ -204,11 +204,14 @@ const draw = {
   @media (min-width: 900px) { .ficha__split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: clamp(40px, 6vw, 96px); align-items: start; } }
 
   .alcance { list-style: none; border-top: 1px solid var(--line); }
-  .alcance li { display: flex; gap: 0.85rem; align-items: baseline; padding-block: 14px; border-bottom: 1px solid var(--line); font-size: var(--step-1); line-height: 1.35; }
+  .alcance li { position: relative; display: flex; gap: 0.85rem; align-items: baseline; padding-block: 14px; font-size: var(--step-1); line-height: 1.35; }
+  /* la regla inferior es un ::after (no border) para poder tenderla con scale */
+  .alcance li::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; background: var(--line); transform-origin: left; }
   .alcance li :global(.alcance__icon) { flex: none; color: var(--stroke); transform: translateY(0.2em); }
 
   .ficha__rule { border-top: 1px solid var(--line); padding-top: clamp(24px, 3vw, 40px); }
-  .clave { margin: 0; max-width: 46rem; padding-left: 1.25rem; border-left: 3px solid var(--cyan); }
+  .clave { position: relative; margin: 0; max-width: 46rem; padding-left: 1.25rem; }
+  .clave::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--cyan); transform-origin: top; }
   .clave blockquote { margin: 0; }
   .clave__text { font-family: var(--font-display); font-stretch: var(--display-stretch); font-weight: 760; font-size: var(--step-3); line-height: 1.08; color: var(--fg); text-wrap: balance; }
   .clave__text--long { font-size: var(--step-2); line-height: 1.15; }
@@ -231,4 +234,29 @@ const draw = {
   }
   .rel__fila:focus-visible::before { opacity: 1; }
   .rel__fila:focus-visible :global(.rel__arrow) { transform: translateX(0.4rem); }
+
+  /* ---------- #alcance: desde 900 px, "Qué incluye" se queda fijo a la izquierda mientras corre la lista (sin animación; en táctil
+     <900 px la ficha va en una columna y no hay sticky) ---------- */
+  @media (min-width: 900px) { .ficha__split > header { position: sticky; top: calc(var(--header-h) + 2rem); align-self: start; } }
+
+  /* ---------- movimiento (MOVIMIENTO-V2 §6). Lo ligado al scroll en linear; reglas, barra y check en brand ----------
+     Timelines con nombre en la fila / el bloque: un ::after de 1 px o un icono de 22 px darían un entry de 1-22 px (salto seco).
+     El check cristaliza mientras su fila entra (entry 40 % → cover 25 %: visible, no un parpadeo). La regla, en entry 20 % → cover 45 %. */
+  @keyframes cristalizar { from { opacity: 0; scale: 0.4; rotate: -20deg; } }
+  @keyframes clave-barra { from { scale: 1 0; } }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :global(:root:not(.calm):not(.is-lite)) .alcance li { view-timeline: --alc block; }
+      :global(:root:not(.calm):not(.is-lite)) .alcance li :global(.alcance__icon) {
+        animation: cristalizar var(--ease-brand) both; animation-duration: auto; animation-timeline: --alc; animation-range: entry 40% cover 25%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .alcance li::after {
+        animation: filete var(--ease-brand) both; animation-duration: auto; animation-timeline: --alc; animation-range: entry 20% cover 45%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .clave { view-timeline: --clave block; }
+      :global(:root:not(.calm):not(.is-lite)) .clave::before {
+        animation: clave-barra var(--ease-brand) both; animation-duration: auto; animation-timeline: --clave; animation-range: entry 10% cover 40%;
+      }
+    }
+  }
 </style>

@@ -1,0 +1,50 @@
+---
+/*
+  <picture> de una entrada de src/data/fotos.js: AVIF + WebP + JPG, srcset por anchos, width/height del recorte (CLS 0) y aspect-ratio fijo:
+  con "auto" el navegador pasa a la proporción del archivo cargado (480×360 frente a 1202×901) y el alto cambiaba tras la carga.
+  <Picture img={fotos.hero} sizes="…" loading="eager" fetchpriority="high" class="vidrio__img" />
+  Solo la foto LCP va eager + fetchpriority high (y decoding por defecto); el resto, lazy + decoding async. Sin estilos propios: `class`
+  cae en el <img> y lo encuadra quien lo usa (.vidrio__img y .foto en base.css). alt="" la marca como decorativa.
+  · sizes: si no se pasa, el de la entrada (img.sizes) y si no, 100vw.
+  · Móvil (<600 px): un <source media> por formato con solo los anchos <900 (el escalón de 800 o el recorte nativo si es menor): con DPR 3
+    el navegador bajaba el de 1200 para una caja de 360 px.
+  · desde={1024}: por debajo de ese ancho la imagen no se pinta (display: none de quien la usa) y el primer <source> es un GIF de 1 px en
+    línea: así puede ir eager (LCP desde 1024) sin descargarse en móvil.
+*/
+import { asset } from '../../lib/url.js';
+interface Img { base: string; w: number; h: number; widths: number[]; alt: string; sizes?: string }
+interface Props {
+  img: Img;
+  sizes?: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  alt?: string;
+  class?: string;
+  desde?: number;
+}
+const { img, sizes = img.sizes ?? '100vw', loading = 'lazy', fetchpriority, alt = img.alt, class: cls, desde } = Astro.props;
+const srcset = (ext: string, ws = img.widths) => ws.map((w) => `${asset(`${img.base}-${w}.${ext}`)} ${w}w`).join(', ');
+const small = img.widths.filter((w) => w < 900);
+const movil = small.length && small.length < img.widths.length ? small : null;
+const FORMATOS = [['avif', 'image/avif'], ['webp', 'image/webp'], ['jpg', 'image/jpeg']];
+const PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+---
+<picture>
+  {desde && <source media={`(max-width: ${desde - 1}px)`} srcset={PIXEL} />}
+  {movil && FORMATOS.map(([ext, type]) => <source media="(max-width: 599px)" type={type} srcset={srcset(ext, movil)} sizes={sizes} />)}
+  <source type="image/avif" srcset={srcset('avif')} sizes={sizes} />
+  <source type="image/webp" srcset={srcset('webp')} sizes={sizes} />
+  <img
+    class={cls}
+    src={asset(`${img.base}-${img.widths.at(-1)}.jpg`)}
+    srcset={srcset('jpg')}
+    sizes={sizes}
+    width={img.w}
+    height={img.h}
+    alt={alt}
+    loading={loading}
+    decoding={loading === 'lazy' ? 'async' : undefined}
+    fetchpriority={fetchpriority}
+    style={`aspect-ratio: ${img.w} / ${img.h}`}
+  />
+</picture>

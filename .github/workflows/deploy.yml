@@ -35,7 +35,7 @@ jobs:
           PAGES_BASE: /${{ github.event.repository.name }}
           # Staging por defecto. La variable del repo PUBLIC_DEMO="off" lo apaga (vacía sería falsy en Actions y volvería a '1').
           PUBLIC_DEMO: ${{ vars.PUBLIC_DEMO != 'off' && '1' || '' }}
-      # presupuesto de JS por página (≤75 KB gz), contraste AA de los tokens y gate de higiene
+      # presupuesto de JS por página (≤80 KB gz, AJ3), contraste AA de los tokens y gate de higiene
       - run: npm run check
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:

@@ -1,0 +1,176 @@
+---
+/*
+  Dibujo propio de una unidad condensadora en axonométrica. Cada cara se dibuja plana y una matriz la lleva a su plano (frente:
+  x→(.866,.5); lateral: x→(.866,−.5); tapa: ambas). Colores por tokens (cambia con la paleta). Decorativo (aria-hidden). Llena su marco
+  (position: absolute; inset: 0 del padre posicionado).
+  CAPAS: cada pieza es su propia capa (losa, tapa, serp, fan0, fan1, tubos: un div con su <svg>; base y frente, fijas: un <svg>), del tamaño de lo que pinta, situada
+  en un marco cuadrado de 800 unidades con el dibujo en (18, 97). Así lo que se mueve va al compositor: un <g> movido o girado repinta
+  todo el SVG en cada cuadro en el hilo principal (+6 ms/cuadro con la CPU ×4 en el despiece; +1,2 ms en la fila con los ventiladores).
+  La base trae el hueco del gabinete con el compresor dentro, que se ve al levantar la tapa y sacar el panel (despiece).
+  encuadre = caja (proporción) + dónde cae en ella el marco de 800, como un viewBox "meet" (centrado, lleno de alto):
+    completo  640×640, el dibujo arriba a la derecha y el ángulo inferior izquierdo libre (ficha de instalación, Vidrio 1/1)
+    frente    400×300, los dos ventiladores de cerca (fila de instalación del home, Vidrio 4:3 / 16:9)
+    despiece  800×800, el dibujo a .76 y desplazado para dejar sitio a las piezas separadas (Servicios.astro mueve .uc__p--{losa|tapa|
+              serp|fan0|fan1|tubos} en unidades de esta caja). rotulos = { pieza: texto }: un span.chip DENTRO del div de su pieza (viaja
+              con ella; Servicios.astro solo anima su opacidad). Cada pieza expone su caja (--bx --by --bw --bh, unidades del dibujo) para
+              que el rótulo se sitúe con un ancla en unidades del dibujo (--l --t).
+  Ventiladores: .uc__helice (div con las 4 aspas, en el plano del frente por la matriz estática de .uc__plano); aro, rejilla y buje
+  quedan fijos. Solo giran en el despiece (Servicios.astro); en la fila y en la ficha, quietos (QA v2, ver el final del <style>).
+  El id del patrón lleva el encuadre: dos dibujos en la misma página no chocan.
+*/
+interface Props { encuadre?: 'completo' | 'frente' | 'despiece'; rotulos?: Record<string, string> }
+const { encuadre = 'completo', rotulos = {} } = Astro.props;
+// [ancho, alto de la caja, tx, ty, escala] del dibujo dentro de la caja (unidades de la caja)
+const ENCUADRES: Record<string, number[]> = { completo: [640, 640, 46, 8, 0.9], frente: [400, 300, -12, -178, 0.96], despiece: [800, 800, 100, 190, 0.76] };
+const [VW, VH, tx, ty, s] = ENCUADRES[encuadre];
+const r3 = (n: number) => +n.toFixed(3);
+const marco = `left:${r3((100 * (tx - 18 * s)) / VW)}%;top:${r3((100 * (ty - 97 * s)) / VH)}%;width:${r3((800 * s * 100) / VW)}%;height:${r3((800 * s * 100) / VH)}%`;
+const aletas = `equipo-aletas-${encuadre}`;
+// caja de cada capa (x y w h en unidades del dibujo, con margen para el trazo; los tubos suben fuera del marco)
+const CAJAS: Record<string, number[]> = {
+  losa: [24, 244, 567, 346], base: [58, 44, 498, 512], tapa: [58, 44, 498, 292], serp: [370, 224, 186, 332],
+  frente: [58, 144, 325, 412], fan0: [80, 214, 134, 172], fan1: [227, 299, 134, 172], tubos: [394, -170, 218, 774],
+};
+const pc = (n: number) => r3(n / 8); // unidades del marco de 800 → %
+// capa fija: el propio <svg> se sitúa en el marco. Pieza que se mueve: un div la sitúa y lleva la animación, con el <svg> dentro (lienzo):
+// Chrome no acelera translate/rotate sobre un elemento SVG ("SVG target has independent transform property") y lo repinta en el hilo principal
+const situar = (n: string) => { const [x, y, w, h] = CAJAS[n]; return `left:${pc(x + 18)}%;top:${pc(y + 97)}%;width:${pc(w)}%;height:${pc(h)}%;--bx:${x};--by:${y};--bw:${w};--bh:${h}`; };
+const lienzo = (n: string) => ({ class: 'uc', viewBox: CAJAS[n].join(' '), focusable: 'false', 'aria-hidden': 'true' });
+const capa = (n: string, mueve = true) => (mueve ? { class: `uc uc__p uc__p--${n}`, 'aria-hidden': 'true', style: situar(n) } : { ...lienzo(n), style: situar(n) });
+// ventiladores del frente (cx en la cara de 360×220) y aspas (grados)
+const fans = [95, 265];
+const blades = [0, 90, 180, 270];
+// codos de retorno (horquillas) en la placa lateral del serpentín
+const bends = [24, 44, 64, 84, 104, 124, 144];
+const FRENTE = 'matrix(.866 .5 0 1 64.8 150)';
+const SILUETA = 'M64.8 150 238 50 549.8 230V450L376.6 550 64.8 370Z';
+const ASPA = 'M-5-11C-20-28-24-48-11-62C3-68 20-61 24-50C17-34 10-21 6-11Z';
+// caja del plano de un ventilador (140×140 centrado en su eje) en % de la caja de su capa
+const plano = (cx: number, n: string) => {
+  const [x, y, w, h] = CAJAS[n];
+  const [ox, oy] = [64.8 + 0.866 * cx - 70, 150 + 0.5 * cx + 102 - 70];
+  return `left:${r3((100 * (ox - x)) / w)}%;top:${r3((100 * (oy - y)) / h)}%;width:${r3(14000 / w)}%;height:${r3(14000 / h)}%`;
+};
+---
+<div class={`uc-caja uc-caja--${encuadre}`} style={`aspect-ratio:${VW}/${VH};--aletas:url(#${aletas})`} aria-hidden="true">
+  <div class="uc-marco" style={marco}>
+    <!-- losa -->
+    <div {...capa('losa')}><svg {...lienzo('losa')}>
+      <polygon class="uc__losa-top" points="238,250 584.4,450 376.6,570 30.2,370" />
+      <polygon class="uc__losa-a" points="30.2,370 376.6,570 376.6,584 30.2,384" />
+      <polygon class="uc__losa-b" points="376.6,570 584.4,450 584.4,464 376.6,584" />
+    </svg>{rotulos.losa && <span class="chip chip--losa">{rotulos.losa}</span>}</div>
+    <!-- base (fija): el hueco del gabinete con el compresor dentro; la silueta, DEBAJO de las piezas (al separarse no las cruza) -->
+    <svg {...capa('base', false)}>
+      <defs><pattern id={aletas} width="5" height="8" patternUnits="userSpaceOnUse"><path class="uc__aleta" d="M2.5 0V8" /></pattern></defs>
+      <polygon class="uc__interior" points="64.8,150 238,50 549.8,230 549.8,450 376.6,550 376.6,330" />
+      <path class="uc__comp" d="M318.9 239V379A49 28.3 0 0 0 416.9 379V239Z" />
+      <ellipse class="uc__comp-top" cx="367.9" cy="239" rx="49" ry="28.3" />
+      <path class="uc__silueta" d={SILUETA} />
+    </svg>
+    <!-- tapa -->
+    <div {...capa('tapa')}><svg {...lienzo('tapa')}>
+      <g transform="matrix(.866 .5 .866 -.5 64.8 150)">
+        <rect class="uc__tapa" width="360" height="200" />
+        <rect class="uc__fino" x="14" y="14" width="332" height="172" />
+      </g>
+    </svg>{rotulos.tapa && <span class="chip chip--tapa">{rotulos.tapa}</span>}</div>
+    <!-- lateral: serpentín con aletas, horquillas y conexiones -->
+    <div {...capa('serp')}><svg {...lienzo('serp')}>
+      <g transform="matrix(.866 -.5 0 1 376.6 330)">
+        <rect class="uc__lado" width="200" height="220" />
+        <rect class="uc__base" y="204" width="200" height="16" />
+        <rect class="uc__cara" x="10" y="12" width="26" height="148" />
+        {bends.map((t) => <path class="uc__fino" d={`M36 ${t - 7}h-12a7 7 0 0 0 0 14h12`} />)}
+        <rect class="uc__aletas" x="40" y="12" width="150" height="148" />
+        <rect class="uc__hueco" x="10" y="166" width="180" height="32" />
+        <circle class="uc__cara" cx="34" cy="180" r="11" />
+        <circle class="uc__cara" cx="70" cy="186" r="6" />
+      </g>
+    </svg>{rotulos.serp && <span class="chip chip--serp">{rotulos.serp}</span>}</div>
+    <!-- frente (fijo): cara, aros y huecos con las aletas del serpentín detrás -->
+    <svg {...capa('frente', false)}>
+      <g transform={FRENTE}>
+        <rect class="uc__cara" width="360" height="220" />
+        <rect class="uc__base" y="204" width="360" height="16" />
+        {fans.map((cx) => (
+          <g transform={`translate(${cx} 102)`}>
+            <circle class="uc__aro" r="78" />
+            <circle class="uc__hueco" r="70" />
+            <circle class="uc__aletas" r="70" />
+          </g>
+        ))}
+        {[[8, 8], [352, 8], [8, 196], [352, 196]].map(([x, y]) => <circle class="uc__tornillo" cx={x} cy={y} r="2.2" />)}
+      </g>
+    </svg>
+    <!-- ventiladores: las aspas, planas en su propio <svg> dentro de un div con la matriz del frente (el giro es el rotate del div: en un
+         elemento SVG no va al compositor); encima, buje y rejilla -->
+    {fans.map((cx, n) => (
+      <div {...capa(`fan${n}`)}>
+        <div class="uc__plano" style={plano(cx, `fan${n}`)}>
+          <div class="uc__helice"><svg viewBox="-70 -70 140 140" aria-hidden="true" focusable="false">{blades.map((a) => <path class="uc__aspa" transform={`rotate(${a})`} d={ASPA} />)}</svg></div>
+        </div>
+        <svg {...lienzo(`fan${n}`)}>
+          <g transform={`${FRENTE} translate(${cx} 102)`}><circle class="uc__buje" r="11" /><circle class="uc__cara" r="4" /><path class="uc__rejilla" d="M-70 0H70M0-70V70" />{[62, 52, 42, 32, 22].map((r) => <circle class="uc__rejilla" r={r} />)}</g>
+        </svg>
+        {rotulos[`fan${n}`] && <span class={`chip chip--fan${n}`}>{rotulos[`fan${n}`]}</span>}
+      </div>
+    ))}
+    <!-- tubería: línea de líquido (desnuda) y succión (aislada, con juntas del aislante); salen del lateral y suben fuera del marco -->
+    <div {...capa('tubos')}><svg {...lienzo('tubos')}>
+      <g class="uc__tubos">
+        <path class="uc__liq-a" d="M437.2 481 600 575V-700" />
+        <path class="uc__liq-b" d="M437.2 481 600 575V-700" />
+        <path class="uc__suc-a" d="M406 491 579.2 591V-700" />
+        <path class="uc__suc-b" d="M406 491 579.2 591V-700" />
+        <path class="uc__suc-c" d="M406 491 579.2 591V-700" />
+      </g>
+    </svg>{rotulos.tubos && <span class="chip chip--tubos">{rotulos.tubos}</span>}</div>
+  </div>
+</div>
+
+<style>
+  /* caja del encuadre: llena el alto del padre y se centra (como un viewBox "meet" en una caja más ancha: la fila en 16:9) */
+  .uc-caja { position: absolute; top: 0; left: 50%; height: 100%; translate: -50% 0; }
+  .uc-marco { position: absolute; } /* el marco de 800 (left/top/width/height en línea) */
+  .uc { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; } /* cada capa: left/top/width/height en línea (capa()) */
+  /* aspas: planas, en el plano del frente por la matriz (estática) del div; la hélice gira sobre su centro */
+  .uc__plano { position: absolute; transform: matrix(0.866, 0.5, 0, 1, 0, 0); }
+  .uc__helice { position: absolute; inset: 0; }
+  .uc__helice svg { width: 100%; height: 100%; overflow: visible; }
+  /* «acero» (MARCA §2.2): el aislante también pasa a acero */
+  :global([data-palette='acero']) .uc .uc__suc-b { stroke: color-mix(in srgb, var(--ink) 14%, var(--surface)); }
+
+  .uc-caja { --l: color-mix(in srgb, var(--ink) 78%, transparent); }
+  .uc-caja :is(rect, circle, ellipse, polygon, path) { stroke: var(--l); stroke-width: 1.1; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .uc__cara { fill: var(--surface); }
+  .uc__lado { fill: color-mix(in srgb, var(--ink) 9%, var(--surface)); }
+  .uc__tapa { fill: color-mix(in srgb, var(--cyan) 6%, var(--surface)); }
+  .uc__base { fill: color-mix(in srgb, var(--ink) 16%, var(--surface)); }
+  .uc__hueco { fill: color-mix(in srgb, var(--ink) 20%, var(--surface)); }
+  .uc__interior { fill: color-mix(in srgb, var(--ink) 24%, var(--surface)); }
+  .uc__comp { fill: color-mix(in srgb, var(--brand) 34%, var(--surface)); }
+  .uc__comp-top { fill: color-mix(in srgb, var(--brand) 14%, var(--surface)); }
+  .uc__aletas { fill: var(--aletas); }
+  .uc-caja .uc__aleta { stroke: color-mix(in srgb, var(--ink) 34%, transparent); stroke-width: 0.9; vector-effect: none; }
+  .uc__aro { fill: color-mix(in srgb, var(--ink) 6%, var(--surface)); }
+  .uc__aspa { fill: color-mix(in srgb, var(--ink) 34%, var(--surface)); }
+  .uc__buje { fill: var(--cyan); }
+  .uc-caja .uc__rejilla { fill: none; stroke-width: 0.75; stroke: color-mix(in srgb, var(--ink) 62%, transparent); }
+  .uc-caja .uc__fino { fill: none; stroke-width: 0.8; }
+  .uc__tornillo { fill: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
+  .uc-caja .uc__silueta { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+  .uc__losa-top { fill: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+  .uc__losa-a { fill: color-mix(in srgb, var(--ink) 12%, var(--surface)); }
+  .uc__losa-b { fill: color-mix(in srgb, var(--ink) 18%, var(--surface)); }
+  /* tubos: trazo que escala con el dibujo (no non-scaling): contorno + relleno + juntas del aislante */
+  .uc-caja .uc__tubos path { fill: none; vector-effect: none; stroke-linejoin: round; }
+  .uc-caja .uc__liq-a { stroke: var(--l); stroke-width: 8; }
+  .uc-caja .uc__liq-b { stroke: var(--surface); stroke-width: 5; }
+  .uc-caja .uc__suc-a { stroke: var(--l); stroke-width: 22; }
+  .uc-caja .uc__suc-b { stroke: color-mix(in srgb, var(--cyan) 30%, var(--surface)); stroke-width: 19.5; }
+  .uc-caja .uc__suc-c { stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 19.5; stroke-dasharray: 1.4 34; }
+
+  /* §5.2: fuera del despiece las aspas quedan quietas. El giro de 1,5 vueltas con el --vidrio del marco se QUITÓ en la integración (§5.2
+     aceptación 4): sumaba +3-5 ms de media por cuadro en las filas (Layerize), CPU ×4. El despiece gira las suyas en Servicios.astro. */
+</style>

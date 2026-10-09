@@ -11,14 +11,14 @@ npm install
 npm run dev          # http://localhost:4321
 PUBLIC_DEMO=1 npm run build && npm run preview
 npm test             # node:test (site.js: WhatsApp, demo, servicios)
-npm run check        # contraste AA de los tokens + presupuesto de JS (≤75 KB gz, tras el build) + gate de higiene
+npm run check        # contraste AA de los tokens + presupuesto de JS (≤80 KB gz, AJ3; tras el build) + gate de higiene
 ```
 
 Varios dev servers a la vez: `VITE_CACHE_DIR=.vite-<id> npx astro dev --port <puerto> --ignore-lock` (Astro 7 no deja arrancar un segundo `astro dev` en la misma carpeta sin `--ignore-lock`; `--force` mataría el del otro). Capturas: `node tools/qa/shoot.mjs --port=9431 mobile http://127.0.0.1:4331/ "#sectores"` (la cabecera del script explica el resto).
 
 Deploy: cada push a `main` publica en GitHub Pages (`.github/workflows/deploy.yml`). La variable del repo `PUBLIC_DEMO=off` apaga el modo staging. GitHub Pages ignora `public/_headers`: la propuesta va sin cabeceras de seguridad; el sitio real irá en Cloudflare Pages.
 
-`insumos/` (fotos del IG del cliente, sin permiso: Q8/Q21) está en `.gitignore` y nunca se sube.
+Fotos: Diego autorizó el 2026-10-07 usar las del IG del cliente en la propuesta. Los recortes publicados están en `public/img/fotos/` (datos en `src/data/fotos.js`, `<picture>` en `src/components/ui/Picture.astro`). Los originales, en `insumos/`, siguen en `.gitignore` y no se suben. Tampoco se suben los documentos internos (`PREPARACION.md`, `docs/*` salvo `docs/QA-PROPUESTA.md`).
 
 ## Dónde está cada cosa
 
@@ -36,7 +36,7 @@ Deploy: cada push a `main` publica en GitHub Pages (`.github/workflows/deploy.ym
 | Q5 | Repuestos: marcas, envíos, a quién venden | Familias con las marcas de su IG, sin precios |
 | Q6 | Academia ARIR: ¿parte de Refridi? | Sección corta en el home, sin precios ni fechas |
 | Q7 | Logo en vector y wordmark | Isotipo redibujado + "Refridi" en texto (provisional) |
-| Q8 | Fotos propias | Gráficos propios en SVG/CSS, sin fotos ni stock |
+| Q8 | Fotos propias | Fotos de su IG (permiso de Diego, 2026-10-07) en el hero, Criterio, Repuestos, Academia y 2 fichas; instalación con dibujo propio. Sin stock |
 | Q9 | Razón social y RIF | Sin RIF en el pie |
 | Q10 | Año de fundación ("40+ años") | En la placa del hero, marcado POR CONFIRMAR |
 | Q11 | Qué cubre el soporte 24/7 | "Atención 24/7" solo en la placa, marcado POR CONFIRMAR (ni en Criterio, ni en Mantenimiento, ni en #contacto) |
@@ -47,4 +47,5 @@ Deploy: cada push a `main` publica en GitHub Pages (`.github/workflows/deploy.ym
 | Q16 | Tú o usted | Usted |
 | Q19 | Temperatura de referencia | La sonda de la cava no se muestra |
 | Q20 | Citar reseñas de Google | Solo la valoración (4,5 ★, 48 opiniones) con enlace |
+| Q21 | Personas en las fotos | Hero, Criterio y Academia muestran personas: marcadas POR CONFIRMAR Q21 en `src/data/fotos.js` |
 | Q22 | Pin de Google Maps | Enlace de búsqueda por dirección |

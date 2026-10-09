@@ -1,48 +1,228 @@
 ---
-/* Criterio (MAPA §3 fila 3): diferenciar ingeniería frente a parche. 3 frases del cliente, cada una con su respaldo, y cierre con
-   "Equipo de profesionales" [cliente · LT] ("certificados" solo con Q14). Reveals CSS con view(): data-reveal / data-stagger (--i).
-   Contrato: <section id="criterio" data-theme="light" aria-labelledby="criterio-title">, hijo directo de <main>. */
+/*
+  #criterio (MAPA §3 fila 3): ingeniería frente a parche. Escena fijada 1 "Pull-down" (MOVIMIENTO-V2 §5.3). 0 JS por cuadro: todo CSS.
+  Contrato: <section id="criterio" data-theme="light" aria-labelledby="criterio-title">, hijo directo de <main>.
+  Recorrido: eyebrow + H2 en flujo (el H2 se contrae, contrae.js) → la escena se fija → al soltarse, la pizarra en vidrio y la firma.
+    .pull__pista   alto var(--alto) (260svh; 200svh con pointer:coarse), view-timeline --pull. "contain" = mientras el sticky está fijo.
+    .pull__sticky  sticky, top 0, 100svh, overflow clip (a todo el ancho: el aro nunca se recorta en el borde del contenedor).
+      .pull__graf  registro temperatura-tiempo, decorativo (aria-hidden; sin cifras hasta Q19): eje "Ambiente" arriba, "Consigna"
+                   discontinua abajo, curva fantasma = --ease-brand escalada al viewBox. De entry 70 % (el registro ya asoma mientras el
+                   sticky sube: sin zona muerta antes de fijarse) a contain 60 % (revisión final de v2; antes contain 4 → 82 %):
+                   · trazo: cortina de dos capas (.pull__traza −100 % → 0, .pull__traza-in +100 % → 0): sin clip-path animado (regla 2)
+                   · cursor: .pull__cx x lineal 0 → 100 % y su hijo .pull__cy y 0 → 100 % con --ease-brand: x lineal por y con brand
+                     ES la bézier dibujada (sin MotionPath).
+                   Del 75 al 100 % no se mueve nada: la consigna.
+                   · consigna alcanzada: .pull__plot::after, escarcha cian desde la consigna, opacity 0 → 1 en contain 60 → 75 %.
+      .pull__frases las 3 frases del cliente; cada li.frase (--k) se enciende (.15 → 1, y sube 1,25 rem) y su barra cian se tiende en
+                   contain 21k → (10 + 21k) %, cuando el cursor pasa por su tercio. Ya encendidas se quedan. <900 px: una sola celda,
+                   una frase por turno (21k → 26 + 21k %).
+                   Las apagadas (.15) son un estado de paso, como un reveal a medias (el contraste AA se mide encendidas; MOVIMIENTO-V2 §5.3).
+  Entrada: mientras el sticky sube (entry 30 → 100 %), el registro llega desde 10vh a .92 y las frases desde 6vh (revisión final de v2).
+  Puerta (CSS + clases del head, antes del primer pintado): no-preference + min-height 600px + view() + html sin .calm ni .is-lite.
+  Fuera de ella (y por defecto) el ESTADO FINAL estático: pista auto, sticky static, curva completa, aro en la consigna, frases encendidas.
+  Sin JS: igual (es CSS). Q19: con la respuesta, "Consigna" pasa a "Consigna · {valor}". Nunca se inventa la temperatura ambiente.
+  Foto [cliente · IG CYb6yk2rnoK] en Vidrio 2:1 (16:10 por debajo de 900 px): la franja de la pizarra con la tabla de presión y
+  temperatura. POR CONFIRMAR Q21: técnicos, casi todos de espaldas. Es el respiro (≥0,8 viewport) antes de la Cortina.
+*/
+import Vidrio from '../ui/Vidrio.astro';
 import { legal } from '../../data/site.js';
+import { fotos } from '../../data/fotos.js';
 
 const frases = [
-  // [cliente · IG DYDlNeHjlEV] → respaldo [redactado sobre "diagnósticos precisos", mismo post]
+  // [cliente · IG DYDlNeHjlEV] → respaldo [redactado sobre "diagnósticos precisos", mismo post] · tramo: la caída, el diagnóstico
   { frase: 'No ponemos parches', respaldo: 'Diagnósticos precisos antes de reparar: se corrige la causa de la falla, no el síntoma.' },
-  // [cliente · IG DYDlNeHjlEV] → respaldo [redactado sobre IG DWO2-bmDn4f]
+  // [cliente · IG DYDlNeHjlEV] → respaldo [redactado sobre IG DWO2-bmDn4f] · tramo: la aproximación, el cálculo
   { frase: 'Ingeniería, no improvisación', respaldo: 'Cálculo de carga térmica y balance térmico antes de seleccionar cada equipo.' },
-  // [cliente · IG Dd7h8WOO9-3] → respaldo [redactado, mismo post] · " y soporte 24/7" se añade con Q11 (MAPA §3 fila 3: sin Q11, solo las unidades)
+  // [cliente · IG Dd7h8WOO9-3] → respaldo [redactado, mismo post] · " y soporte 24/7" se añade con Q11 · tramo: la consigna mantenida
   { frase: 'Cada minuto de inactividad cuenta', respaldo: 'Unidades de compresión con respaldo para operaciones críticas.' },
 ];
+// cubic-bezier(.18, .05, .24, 1) (--ease-brand) escalada a 1000×560; la y crece hacia abajo porque la temperatura baja
+const CURVA = 'M0,0 C180,28 240,560 1000,560';
 ---
 <section id="criterio" class="section criterio" data-theme="light" aria-labelledby="criterio-title">
   <div class="container">
-    <div class="section__head" data-reveal>
+    <div class="section__head">
       <span class="eyebrow">Criterio</span>
-      <h2 id="criterio-title">Lo que decimos y cómo lo cumplimos</h2>
+      <h2 id="criterio-title" data-contrae>Lo que decimos y cómo lo cumplimos</h2>
     </div>
-    <ul class="criterio__lista" role="list" data-stagger>
-      {frases.map((f) => (
-        <li class="criterio__item">
-          <h3 class="criterio__frase">“{f.frase}”</h3>
-          <p class="criterio__label label">En la práctica</p>
-          <p class="criterio__respaldo">{f.respaldo}</p>
-        </li>
-      ))}
-    </ul>
+  </div>
+
+  <div class="pull__pista">
+    <div class="pull__sticky">
+      <div class="pull__rejilla container">
+        <figure class="pull__graf" aria-hidden="true">
+          <span class="pull__eje pull__eje--t label">Ambiente</span>
+          <div class="pull__plot">
+            <svg class="pull__base" viewBox="0 0 1000 560" preserveAspectRatio="none" focusable="false">
+              <path class="pull__guia" d="M333,0V560M667,0V560" fill="none" />
+              <path class="pull__amb" d="M0,560V0H1000" fill="none" />
+              <path class="pull__consigna" d="M0,560H1000" fill="none" />
+              <path class="pull__fantasma" d={CURVA} fill="none" />
+            </svg>
+            <div class="pull__traza"><div class="pull__traza-in">
+              <svg viewBox="0 0 1000 560" preserveAspectRatio="none" focusable="false">
+                <defs>
+                  <linearGradient id="pull-calor"><stop offset="0" class="pull__s0" /><stop offset="1" class="pull__s1" /></linearGradient>
+                </defs>
+                <path d={`${CURVA} L1000,0 Z`} fill="url(#pull-calor)" />
+                <path class="pull__filo" d={CURVA} fill="none" />
+              </svg>
+            </div></div>
+            <div class="pull__cx"><div class="pull__cy"><i class="pull__punto"></i></div></div>
+          </div>
+          <span class="pull__eje label">Consigna</span>
+          <span class="pull__eje pull__eje--x label">Tiempo<svg viewBox="0 0 22 10" width="22" height="10"><path d="M0 5h20M16 1.5 19.5 5 16 8.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg></span>
+        </figure>
+
+        <ol class="pull__frases" role="list">
+          {frases.map((f, k) => (
+            <li class="frase" style={`--k:${k}`}>
+              <i class="frase__barra" aria-hidden="true"></i>
+              <h3 class="frase__txt">“{f.frase}”</h3>
+              <p class="frase__label label">En la práctica</p>
+              <p class="frase__respaldo">{f.respaldo}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="container criterio__cierre">
+    <div data-reveal="profundo">
+      <Vidrio class="criterio__vidrio" img={fotos.criterio} ar="2/1" sizes="min(92vw, 1240px)" />
+    </div>
     <p class="criterio__firma label" data-reveal><span>Equipo de profesionales <span class="muted">· {legal.company}</span></span></p>
   </div>
 </section>
 
+<script>
+  import '../../scripts/contrae.js';
+</script>
+
 <style>
-  .criterio__lista { list-style: none; display: grid; gap: clamp(40px, 5vw, 64px); }
-  .criterio__item { padding-top: 22px; border-top: 1px solid var(--line); position: relative; }
-  .criterio__item::before { content: ''; position: absolute; top: -2px; left: 0; width: 40px; height: 3px; background: var(--cyan); }
-  .criterio__frase { font-size: var(--step-3); line-height: 1.02; }
-  .criterio__label { margin-top: 1.5rem; font-size: var(--step--1); color: var(--stroke); }
-  .criterio__label + .criterio__respaldo { margin-top: 0.4rem; }
-  .criterio__respaldo { color: var(--muted); max-width: 36ch; }
-  .criterio__firma { display: flex; align-items: center; gap: 0.6em; margin-top: clamp(48px, 6vw, 80px); font-size: var(--step-1); }
-  .criterio__firma::before { content: ''; flex: none; width: 40px; height: 1px; background: var(--fg); }
+  /* ---------- estático (por defecto): el registro terminado y las frases encendidas ---------- */
+  .criterio { --alto: 260svh; }
+  @media (pointer: coarse) { .criterio { --alto: 200svh; } }
+
+  .pull__sticky { overflow: clip; } /* el cursor (caja del plot trasladada 100 %) nunca desborda la página */
+  .pull__rejilla { display: grid; gap: clamp(28px, 4vw, 48px); }
   @media (min-width: 900px) {
-    .criterio__lista { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .pull__rejilla { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: clamp(40px, 6vw, 96px); align-items: center; }
+  }
+
+  .pull__graf { display: grid; grid-template-columns: 1fr auto; row-gap: 0.6rem; margin: 0; }
+  .pull__eje { font-size: var(--step--1); color: var(--muted); }
+  .pull__eje--t { grid-column: 1 / -1; }
+  .pull__eje--x { display: inline-flex; align-items: center; gap: 0.45em; }
+  .pull__plot { grid-column: 1 / -1; position: relative; height: min(60svh, 520px); }
+  /* las cajas del cursor (del tamaño del plot, trasladadas hasta 100 %) no suman desborde al sticky; 24 px de margen para el aro y su halo.
+     Sin soporte (Safari) no se recorta: un clip sin margen cortaría el aro en las esquinas */
+  @supports (overflow-clip-margin: 24px) { .pull__plot { overflow: clip; overflow-clip-margin: 24px; } }
+  @media (max-width: 899px) { .pull__plot { height: 40svh; } }
+
+  .pull__plot svg { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; }
+  .pull__plot path { vector-effect: non-scaling-stroke; }
+  .pull__amb { stroke: color-mix(in srgb, var(--fg) 45%, transparent); stroke-width: 1; }
+  .pull__guia { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 6; }
+  .pull__consigna { stroke: var(--stroke); stroke-width: 1.5; stroke-dasharray: 8 6; }
+  .pull__fantasma { stroke: color-mix(in srgb, var(--muted) 70%, transparent); stroke-width: 1; stroke-dasharray: 4 4; }
+  .pull__filo { stroke: var(--brand); stroke-width: 4; stroke-linecap: round; }
+  /* el calor retirado es una masa que llena el plot (revisión final de v2: a .2/.3 no se veía) */
+  .pull__s0 { stop-color: var(--cyan); stop-opacity: 0.5; }
+  .pull__s1 { stop-color: var(--brand); stop-opacity: 0.8; }
+  /* consigna alcanzada: escarcha cian que sube desde la consigna (estado final: puesta) */
+  .pull__plot::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top, color-mix(in srgb, var(--cyan) 28%, transparent), transparent 55%);
+  }
+
+  /* trazo: la capa exterior recorta, la interior compensa (cortina de dos capas). 4 px de aire arriba y abajo para el filo de 4 px */
+  .pull__traza { position: absolute; inset: -4px 0; overflow: clip; }
+  .pull__traza-in { position: absolute; inset: 0; }
+  .pull__traza svg { top: 4px; height: calc(100% - 8px); }
+
+  /* cursor: dos cajas del tamaño del plot; la x y la y se trasladan por separado. Estado final: en la consigna, al fondo a la derecha */
+  .pull__cx, .pull__cy { position: absolute; inset: 0; pointer-events: none; }
+  .pull__cx { translate: 100% 0; z-index: 1; }
+  .pull__cy { translate: 0 100%; }
+  .pull__punto {
+    position: absolute; left: 0; top: 0; width: 28px; height: 28px; margin: -14px;
+    border: 4px solid var(--brand); border-radius: 50%; background: var(--surface);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--cyan) 25%, transparent);
+  }
+
+  .pull__frases { list-style: none; display: grid; gap: clamp(20px, 3svh, 36px); }
+  .frase { position: relative; padding-top: 18px; border-top: 1px solid var(--line); }
+  .frase__barra { position: absolute; top: -2px; left: 0; width: 100%; height: 3px; background: var(--cyan); transform-origin: left; }
+  .frase__txt { font-size: var(--step-3); line-height: 1.02; }
+  .frase__label { margin-top: 1rem; font-size: var(--step--1); color: var(--stroke); }
+  .frase__label + .frase__respaldo { margin-top: 0.3rem; }
+  .frase__respaldo { color: var(--muted); max-width: 36ch; }
+
+  /* cierre: la pizarra como banda ancha y la firma */
+  .criterio__cierre { margin-top: clamp(32px, 5vw, 72px); }
+  @media (max-width: 899px) { .criterio__vidrio { aspect-ratio: 16 / 10; } }
+  .criterio__firma { display: flex; align-items: center; gap: 0.6em; margin-top: clamp(40px, 5vw, 72px); font-size: var(--step-1); }
+  .criterio__firma::before { content: ''; flex: none; width: 40px; height: 1px; background: var(--fg); }
+
+  /* ---------- escena (§5.3 Mecánica): rango contain de la pista = mientras el sticky está fijo. linear, salvo la y del cursor ---------- */
+  @keyframes pull-izq { from { translate: -100% 0; } to { translate: 0 0; } }
+  @keyframes pull-der { from { translate: 100% 0; } to { translate: 0 0; } }
+  @keyframes pull-x { from { translate: 0 0; } to { translate: 100% 0; } }
+  @keyframes pull-y { from { translate: 0 0; } to { translate: 0 100%; } }
+  @keyframes frase-encender { from { opacity: 0.15; translate: 0 1.25rem; } }
+  @keyframes frase-tender { from { scale: 0 1; } }
+  @keyframes frase-turno { 0% { opacity: 0; translate: 0 1.25rem; } 20%, 80% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 -1.25rem; } }
+  @keyframes frase-turno-fin { 0% { opacity: 0; translate: 0 1.25rem; } 20%, 100% { opacity: 1; translate: 0 0; } }
+  @keyframes pull-consigna { from { opacity: 0; } }
+  @keyframes pull-entrar { from { translate: 0 10vh; scale: 0.92; } }
+  @keyframes pull-subir { from { translate: 0 6vh; } }
+
+  @media (prefers-reduced-motion: no-preference) and (min-height: 600px) {
+    @supports (animation-timeline: view()) {
+      /* inset 0: sin él el view-timeline toma el scroll-padding-top del html y "contain" empezaría 88 px tarde */
+      /* el sticky ya separa (padding del header + centrado): sin el margen de la cabecera, menos papel vacío antes de que se fije */
+      :global(:root:not(.calm):not(.is-lite)) .section__head { margin-bottom: 0; }
+      /* ritmo: entre el Pull-down y la Cortina, ≥ 0,8 viewport de recorrido libre también en móvil: la pizarra sube al soltarse la escena
+         y el aire queda antes de la cortina. svh: no cambia tras la carga. En desktop el cierre ya mide eso y no cambia */
+      :global(:root:not(.calm):not(.is-lite)) .criterio__cierre { min-height: 80svh; }
+      :global(:root:not(.calm):not(.is-lite)) .pull__pista { height: var(--alto); view-timeline: --pull block; view-timeline-inset: 0; }
+      :global(:root:not(.calm):not(.is-lite)) .pull__sticky {
+        position: sticky; top: 0; height: 100svh; display: grid; align-content: center;
+        padding-block: calc(var(--header-h) + 3svh) 3svh;
+      }
+      /* dentro del sticky el texto cabe a 600 px de alto; fuera (estático) va a --step-3 */
+      :global(:root:not(.calm):not(.is-lite)) .frase__txt { font-size: var(--step-2); }
+      :global(:root:not(.calm):not(.is-lite)) .frase__respaldo { font-size: var(--step--1); }
+
+      /* el shorthand animation reinicia animation-timeline: timeline y rango van después */
+      :global(:root:not(.calm):not(.is-lite)) :is(.pull__traza, .pull__traza-in, .pull__cx, .pull__cy) {
+        animation: pull-izq linear both; animation-duration: auto; animation-timeline: --pull; animation-range: entry 70% contain 60%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .pull__traza-in { animation-name: pull-der; }
+      :global(:root:not(.calm):not(.is-lite)) .pull__cx { animation-name: pull-x; }
+      :global(:root:not(.calm):not(.is-lite)) .pull__cy { animation-name: pull-y; animation-timing-function: var(--ease-brand); }
+      :global(:root:not(.calm):not(.is-lite)) .pull__plot::after {
+        animation: pull-consigna linear both; animation-duration: auto; animation-timeline: --pull; animation-range: contain 60% contain 75%;
+      }
+      /* entrada mientras el sticky sube (entry 100 % = contain 0 %): sin zona muerta antes de fijarse */
+      :global(:root:not(.calm):not(.is-lite)) .pull__graf, :global(:root:not(.calm):not(.is-lite)) .pull__frases {
+        animation: pull-entrar var(--ease-brand) both; animation-duration: auto; animation-timeline: --pull; animation-range: entry 30% entry 100%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .pull__frases { animation-name: pull-subir; }
+
+      :global(:root:not(.calm):not(.is-lite)) :is(.frase, .frase__barra) {
+        animation: frase-encender linear both; animation-duration: auto; animation-timeline: --pull;
+        animation-range: contain calc(var(--k) * 21%) contain calc(10% + var(--k) * 21%);
+      }
+      :global(:root:not(.calm):not(.is-lite)) .frase__barra { animation-name: frase-tender; }
+
+      @media (max-width: 899px) {
+        :global(:root:not(.calm):not(.is-lite)) .frase { grid-area: 1 / 1; animation-name: frase-turno; animation-range: contain calc(var(--k) * 21%) contain calc(26% + var(--k) * 21%); }
+        :global(:root:not(.calm):not(.is-lite)) .frase:last-child { animation-name: frase-turno-fin; }
+        :global(:root:not(.calm):not(.is-lite)) .frase__barra { animation-range: contain calc(4% + var(--k) * 21%) contain calc(10% + var(--k) * 21%); }
+      }
+    }
   }
 </style>

@@ -5,7 +5,8 @@
   data-lit / data-count / data-draw / data-parallax (firmas gastadas, CONCEPTO §8), sin loader, con la curva única 'brand'.
 
   ── Atributos declarativos ───────────────────────────────────────────────────────────────────────────────────────────────
-    [data-reveal]  y  [data-stagger] (sus hijos directos)   asentar: opacity 0→1 y translateY(1.5rem)→0, una vez.
+    [data-reveal]  y  [data-stagger] (sus hijos directos)   asentar: opacity 0→1 y y 48 px→0, una vez (MOVIMIENTO-V2 §4.2).
+        ="profundo" (en [data-reveal] o [data-stagger]): y 64 px + scale .94 · [data-stagger="lado"]: x 40 px (desde la derecha).
         Los hace el CSS con animation-timeline: view() (base.css). Este motor SOLO actúa de fallback cuando
         !CSS.supports('animation-timeline: view()') (Firefox, Safari <26): --d-2, curva brand, will-change transitorio y
         puerta de velocidad (|velocidad| > 2000 px/s al entrar → gsap.set al estado final: un scroll rápido nunca espera a una animación).
@@ -36,7 +37,11 @@
         cambió el alto de alguna sección (fuentes, load, resize), agrupado y nunca con la página en movimiento (espera 160 ms quieta).
     P3  solo transform / opacity.
     P4  Lenis + ScrollTrigger como en la doc oficial, con tope MAX_DT al paso de tiempo que recibe lenis.raf (un cuadro atascado no se paga
-        como un salto).
+        como un salto). Lenis va en el ticker de GSAP SOLO mientras desliza: entra con la rueda o con scrollToTarget y sale tras 2 cuadros
+        sin deslizamiento suave; el ticker de GSAP se duerme solo (autoSleep). Página quieta = sin bucle de rAF (PREPARACION §3.10).
+    P6  ScrollTrigger se registra al PRIMER USO (useST): el fallback de reveals sin view(), o un módulo que lea `ScrollTrigger` en onPage
+        (el api lo da con un getter). Al registrarse arranca su propio bucle de rAF permanente, y con view() nada lo necesita (contrae.js
+        dispara por IntersectionObserver).
     P5  saltos largos (anclas a más de 4 viewports): corte a 2 viewports del destino y luego deslizamiento. Si se aterriza en zona nunca
         pintada, espera 250 ms quieto antes de deslizar. Rueda / toque / tecla cancelan la espera. reduced: va directo.
     No hay pins: history.scrollRestoration queda en 'auto'.
@@ -51,9 +56,12 @@ import { gsap } from './ease.js';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 
-gsap.registerPlugin(ScrollTrigger);
-// autoRefreshEvents 'none': la puerta de abajo decide cuándo (y si) refrescar.
-ScrollTrigger.config({ ignoreMobileResize: true, autoRefreshEvents: 'none' });
+// P6: registro perezoso. autoRefreshEvents 'none': la puerta de abajo decide cuándo (y si) refrescar.
+let stOn = false;
+const useST = () => {
+  if (!stOn) { stOn = true; gsap.registerPlugin(ScrollTrigger); ScrollTrigger.config({ ignoreMobileResize: true, autoRefreshEvents: 'none' }); }
+  return ScrollTrigger;
+};
 
 const root = document.documentElement;
 const mqWide = window.matchMedia('(min-width: 768px) and (pointer: fine)');
@@ -74,7 +82,7 @@ let booted = false;
 const registry = [];
 
 export const getLenis = () => lenis;
-export const onRefresh = (fn) => ScrollTrigger.addEventListener('refresh', fn);
+export const onRefresh = (fn) => useST().addEventListener('refresh', fn);
 export const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
 export function setCalm(on) {
   saveScroll(); // antes de que la clase cambie el layout (la cava pasa a estática): la recarga devuelve al lector a su sitio
@@ -109,7 +117,7 @@ export function scrollToTarget(target, opts = {}) {
   const immediate = opts.immediate || env.reduced;
   const y = isY ? target : el.getBoundingClientRect().top + window.scrollY + (opts.offset ?? -gap);
   const go = () => {
-    if (lenis) return lenis.scrollTo(isY ? target : el, { offset: isY ? 0 : offset, immediate });
+    if (lenis) { wake(); return lenis.scrollTo(isY ? target : el, { offset: isY ? 0 : offset, immediate }); }
     window.scrollTo({ top: Math.max(0, y), behavior: immediate ? 'auto' : 'smooth' });
   };
   clearTimeout(glide);
@@ -118,7 +126,7 @@ export function scrollToTarget(target, opts = {}) {
 }
 
 const fontsReady = () => Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 900))]);
-const api = () => ({ gsap, ScrollTrigger, env, lenis, emit, scrollToTarget, onRefresh });
+const api = () => ({ gsap, get ScrollTrigger() { return useST(); }, env, lenis, emit, scrollToTarget, onRefresh });
 
 /** Registra el inicializador de una sección (ver cabecera). */
 export function onPage(fn) {
@@ -142,7 +150,7 @@ const layoutSig = () => {
   return s;
 };
 let lastSig = '', wantForce = false, queued = false, baseW = innerWidth, baseH = innerHeight;
-function refreshEngine() { ScrollTrigger.sort(); refreshNow(); lastSig = layoutSig(); baseW = innerWidth; baseH = innerHeight; }
+function refreshEngine() { if (stOn) { ScrollTrigger.sort(); refreshNow(); } lastSig = layoutSig(); baseW = innerWidth; baseH = innerHeight; }
 function requestRefresh({ force = false } = {}) {
   if (!lastSig && !force) return;
   wantForce ||= force;
@@ -167,13 +175,23 @@ function watchLayout() {
 
 /* ---------------- Lenis (solo env.desktop) ---------------- */
 const MAX_DT = 34; // ms (2 cuadros a 60 Hz: lo que pase de ahí es un atasco, no una tasa de refresco)
+let clock = 0, prev = 0, idle = 0, ticking = false;
+// P4: un cuadro de Lenis. Al despertar avanza un cuadro nominal (no 0: el primer cuadro tras la rueda ya se mueve)
+function tick(t) {
+  const now = t * 1000;
+  clock += prev ? Math.min(now - prev, MAX_DT) : 16.7; prev = now;
+  lenis.raf(clock);
+  idle = lenis.isScrolling === 'smooth' ? 0 : idle + 1;
+  if (idle > 2) { gsap.ticker.remove(tick); ticking = false; prev = 0; }
+}
+function wake() { if (lenis && !ticking) { ticking = true; idle = 0; gsap.ticker.add(tick); } }
 function startLenis() {
   if (!env.desktop) return;
   lenis = new Lenis({ lerp: 0.12, smoothWheel: true });
-  lenis.on('scroll', ScrollTrigger.update);
-  let clock = 0, prev = 0;
-  gsap.ticker.add((t) => { const now = t * 1000; clock += prev ? Math.min(now - prev, MAX_DT) : 0; prev = now; lenis.raf(clock); });
+  lenis.on('scroll', () => { if (stOn) ScrollTrigger.update(); });
   gsap.ticker.lagSmoothing(0);
+  // captura en window: llega antes que el manejador de Lenis (el tick corre en el cuadro siguiente, ya con isScrolling = 'smooth')
+  addEventListener('wheel', wake, { passive: true, capture: true });
 }
 // #hash → elemento. Un hash mal formado (/#%) haría lanzar a decodeURIComponent: entonces se busca tal cual.
 const byHash = (hash) => { let id = hash.slice(1); try { id = decodeURIComponent(id); } catch (e) { /* tal cual */ } return id ? document.getElementById(id) : null; };
@@ -197,24 +215,26 @@ document.addEventListener('click', (e) => {
 const layer = (els, on) => { for (const el of els) el.style.willChange = on ? 'transform, opacity' : ''; };
 const D2 = 0.5;      // = --d-2
 const FAST = 2000;   // px/s: por encima, al estado final sin animar
-function settle(els, trigger, start, stagger) {
-  const lite = env.lite;
+const FROM = { asentar: { y: 48 }, profundo: { y: 64, scale: 0.94 }, lado: { x: 40 } }; // = keyframes de base.css (3rem / 4rem / 2.5rem)
+function settle(els, trigger, start, stagger, variant) {
+  const from = env.lite ? {} : FROM[variant] || FROM.asentar;
   ScrollTrigger.create({
     trigger, start, once: true,
     onEnter: (self) => {
       // opacity nunca se limpia: el pre-hide de base.css volvería a ocultar el elemento
-      if (Math.abs(self.getVelocity()) > FAST) { gsap.set(els, { opacity: 1, y: 0, clearProps: 'transform' }); return; }
-      gsap.fromTo(els, { opacity: 0, y: lite ? 0 : 24 }, { opacity: 1, y: 0, duration: D2, ease: 'brand', stagger, clearProps: 'transform',
+      if (Math.abs(self.getVelocity()) > FAST) { gsap.set(els, { opacity: 1, clearProps: 'transform' }); return; }
+      gsap.fromTo(els, { opacity: 0, ...from }, { opacity: 1, x: 0, y: 0, scale: 1, duration: D2, ease: 'brand', stagger, clearProps: 'transform',
         onStart: () => layer(els, true), onComplete: () => layer(els, false) });
     },
   });
 }
 function initReveals() {
   if (hasView || env.reduced) return; // con view() reveala el CSS; reduced/calm: base.css ya los deja visibles
+  useST();
   // arranque tardío (red lenta): el failsafe de base.css (4 s) ya los mostró; con fx-booted volverían a opacity 0 y se animarían otra vez
   if (performance.now() > 4000) return void gsap.set('[data-reveal], [data-stagger] > *', { opacity: 1 });
-  gsap.utils.toArray('[data-reveal]').forEach((el) => settle([el], el, el.dataset.start || 'top 88%', 0));
-  gsap.utils.toArray('[data-stagger]').forEach((g) => { const kids = [...g.children]; if (kids.length) settle(kids, g, g.dataset.start || 'top 85%', 0.08); });
+  gsap.utils.toArray('[data-reveal]').forEach((el) => settle([el], el, el.dataset.start || 'top 88%', 0, el.dataset.reveal));
+  gsap.utils.toArray('[data-stagger]').forEach((g) => { const kids = [...g.children]; if (kids.length) settle(kids, g, g.dataset.start || 'top 85%', 0.08, g.dataset.stagger); });
 }
 
 /* ---------------- Restauración del scroll tras la recarga por cambio de modo / #hash ---------------- */

@@ -6,6 +6,8 @@
   (razón social, dirección y horario; sin RIF hasta Q9), páginas, redes con @arir_ve, interruptor "Reducir movimiento" (setCalm del
   motor, src/scripts/chrome.js) y la marca "Vista previa" solo en staging. Sin /privacidad/ en la propuesta (la página aún no existe).
   Contrato que NO cambia: es `body > footer` (engine.js lo mide en layoutSig; chrome.js lee su data-theme).
+  Movimiento v2 (MOVIMIENTO-V2 §5.8): además del giro, las columnas del pie se asientan escalonadas ([data-stagger] en la rejilla: marca y
+  4 columnas, --i 0-4; base.css usa un rango entry para que al final del documento terminen). Nada más: el sitio termina quieto.
 */
 import Logo from './Logo.astro';
 import Icon from '../ui/Icon.astro';
@@ -32,7 +34,7 @@ const redes = [
 ---
 <footer class="pie" data-theme="dark">
   <div class="container">
-    <div class="pie__grid">
+    <div class="pie__grid" data-stagger>
       <div class="pie__marca">
         <div class="pie__giro" aria-hidden="true"><Logo name={false} size={56} variant="oscuro" /></div>
         <p class="pie__lema">{brand.tagline}</p>

@@ -1,7 +1,11 @@
 ---
 /* #contacto (brand): banda del CTA final (CONCEPTO §4 Cierre · MAPA §3 #8). La usan el home y las fichas de servicio, cada una con su CTA
    y su waText (props). tel: y mailto: solo aquí y en el pie. Sin "Soporte 24 hrs" hasta Q11; sin embed de mapa (Q22: enlace de búsqueda).
-   La valoración de Google va como una línea mientras no exista #clientes (Q13/Q20). */
+   La valoración de Google va como una línea mientras no exista #clientes (Q13/Q20).
+   Movimiento v2 "Consigna mantenida" (MOVIMIENTO-V2 §5.7), CSS dentro de la puerta única (§4.1): el campo azul (.contacto__campo, capa
+   propia detrás del contenido) se abre de .94 a borde completo al entrar; dos masas de vaho (1 bajo 768 px) cruzan la banda en sentidos
+   contrarios; el H2 se contrae (contrae.js); entradilla, botón y valoración se asientan; las filas de datos se asientan y su regla se
+   tiende. Fuera de la puerta: banda estática, campo completo y sin vaho. */
 import Button from '../ui/Button.astro';
 import Icon from '../ui/Icon.astro';
 import { home, contact, lines, wa, waText } from '../../data/site.js';
@@ -12,13 +16,15 @@ const { cta = home.cta, waText: text = home.waText } = Astro.props;
 const [ratingNum, ratingRest] = contact.rating.text.split('★');
 ---
 <section id="contacto" class="section contacto" data-theme="brand" aria-labelledby="contacto-title">
+  <div class="contacto__campo" aria-hidden="true"></div>
+  <div class="contacto__vaho" aria-hidden="true"><i></i><i></i></div>
   <div class="container contacto__grid">
-    <div class="contacto__cta" data-reveal>
+    <div class="contacto__cta">
       <p class="eyebrow">Contacto</p>
-      <h2 id="contacto-title">{home.closing}</h2>
-      <p class="lead">Escríbanos por WhatsApp qué equipo tiene y qué está pasando. Si lo prefiere, llame o envíe un correo.</p>
-      <div class="btn-row"><Button href={wa('servicios', text)} size="lg" icon="whatsapp" iconPosition="start">{cta}</Button></div>
-      <p class="contacto__rating">
+      <h2 id="contacto-title" data-contrae>{home.closing}</h2>
+      <p class="lead" data-reveal>Escríbanos por WhatsApp qué equipo tiene y qué está pasando. Si lo prefiere, llame o envíe un correo.</p>
+      <div class="btn-row" data-reveal style="--i:1"><Button href={wa('servicios', text)} size="lg" icon="whatsapp" iconPosition="start">{cta}</Button></div>
+      <p class="contacto__rating" data-reveal style="--i:2">
         <a class="contacto__a" href={contact.rating.url} {...ext}>
           <span class="num">{ratingNum}</span><span aria-hidden="true" class="contacto__star">★</span><span class="sr-only">de 5 estrellas</span>{ratingRest}<span class="sr-only"> {newTab}</span>
         </a>
@@ -58,7 +64,14 @@ const [ratingNum, ratingRest] = contact.rating.text.split('★');
   </div>
 </section>
 
+<script>
+  import '../../scripts/contrae.js';
+</script>
+
 <style>
+  /* el fondo vive en .contacto__campo (capa propia, para abrirlo con scale); la sección recorta campo, vaho y la contracción del H2 */
+  .contacto { background: transparent; overflow: clip; }
+  .contacto__campo { position: absolute; inset: 0; z-index: -1; background: var(--bg); }
   .contacto__grid { display: grid; gap: clamp(36px, 5vw, 64px); }
   @media (min-width: 900px) {
     .contacto__grid { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: clamp(48px, 7vw, 112px); align-items: start; }
@@ -68,8 +81,10 @@ const [ratingNum, ratingRest] = contact.rating.text.split('★');
   .contacto__datos { margin: 0; border-top: 1px solid var(--line); }
   .contacto__datos > div {
     display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 16px; align-items: baseline;
-    padding-block: 14px; border-bottom: 1px solid var(--line);
+    position: relative; padding-block: 14px;
   }
+  /* la regla inferior es un ::after (no border) para poder tenderla con scale */
+  .contacto__datos > div::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; background: var(--line); transform-origin: left; }
   .contacto__datos dt {
     display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--tap);
     font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; font-size: var(--step--1); color: var(--stroke);
@@ -90,4 +105,37 @@ const [ratingNum, ratingRest] = contact.rating.text.split('★');
 
   .contacto__rating { margin-top: 1.5rem; }
   .contacto__star { color: var(--stroke); }
+
+  /* ---------- movimiento (MOVIMIENTO-V2 §5.7) ----------
+     Campo: scale .94 .92 → 1 en entry 0-70 % de la sección (brand). A .94 de ancho sigue cubriendo el contenedor de 320 a 2560 px (el
+     contenedor ocupa como mucho el 92,8 % del ancho): el texto blanco nunca queda sobre papel; .90 (lo que pedía la revisión final) lo
+     destapaba por debajo de ~1300 px. El alto a .92 (centro) recoge como mucho el 4 % arriba, menos que el padding (--section-y).
+     Vaho: radial blanco, 60vw × 40svh, linear en cover 0-100 %; uno de abajo-izquierda a arriba-derecha y el otro al revés, en bandas
+     distintas (nunca se suman en el centro). Opacidad del vaho: 6 % en «feed» (con el 18 % de la §5.7 el --muted y el --stroke caen a
+     3,4:1 sobre el azul rey; al 6 % quedan en 4,57:1, AA) y 18 % en «acero» (6,2:1 sobre el grafito). */
+  .contacto__vaho { display: none; position: absolute; inset: 0; z-index: -1; pointer-events: none; --vaho: rgb(255 255 255 / 0.06); }
+  :global([data-palette='acero']) .contacto__vaho { --vaho: rgb(255 255 255 / 0.18); }
+  .contacto__vaho i { position: absolute; width: 60vw; height: 40svh; background: radial-gradient(closest-side, var(--vaho), transparent); }
+  /* el que sube va arriba y el que baja, abajo: se separan al avanzar (lo más cerca, en cover 0 %, quedan a ~20svh) */
+  .contacto__vaho i:first-child { left: -8vw; top: 4%; --desde: -10vw 8svh; --hasta: 10vw -8svh; }
+  .contacto__vaho i:last-child { right: -8vw; bottom: 4%; --desde: 10vw -8svh; --hasta: -10vw 8svh; }
+  @keyframes campo-abrir { from { scale: 0.94 0.92; } }
+  @keyframes vaho-cruzar { from { translate: var(--desde); scale: 1; } to { translate: var(--hasta); scale: 1.15; } }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :global(:root:not(.calm):not(.is-lite)) .contacto__campo {
+        animation: campo-abrir var(--ease-brand) both; animation-duration: auto; animation-timeline: view(); animation-range: entry 0% entry 70%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .contacto { view-timeline: --consigna block; }
+      :global(:root:not(.calm):not(.is-lite)) .contacto__vaho { display: block; }
+      :global(:root:not(.calm):not(.is-lite)) .contacto__vaho i {
+        animation: vaho-cruzar linear both; animation-duration: auto; animation-timeline: --consigna; animation-range: cover 0% cover 100%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .contacto__datos > div { view-timeline: --dato block; }
+      :global(:root:not(.calm):not(.is-lite)) .contacto__datos > div::after {
+        animation: filete var(--ease-brand) both; animation-duration: auto; animation-timeline: --dato; animation-range: entry 40% cover 40%;
+      }
+    }
+  }
+  @media (max-width: 767px) { .contacto__vaho i:last-child { display: none; } }
 </style>

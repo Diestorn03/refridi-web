@@ -3,14 +3,15 @@
    Los componentes usan SOLO los alias semánticos (--bg --fg --muted --stroke --link --btn-bg --btn-fg --line --surface --danger).
    Paletas: <html data-palette="feed|acero">  (el selector solo existe en staging; en producción queda la elegida).
    Temas:   <section data-theme="light|dark|brand">, por significado y nunca alternando por índice:
-            light = todo, hero incluido · brand = solo #sectores y la banda del CTA final · dark = solo el pie.
+            light = todo, hero incluido · brand = solo #sectores y la banda del CTA final · dark = el pie y la banda del Despiece
+            (#servicios, revisión final de v2: ritmo claro/oscuro; POR APROBAR por Diego, docs/MARCA.md §2).
    Contraste: node tools/contrast.mjs  (tabla en docs/MARCA.md §2.4).
    ========================================================== */
 
 /* ---------- paletas (valores crudos) ---------- */
 :root,
 [data-palette='feed'] {
-  --ink: #0a1a4f;        /* navy del feed: texto sobre claro y campo del pie; nunca campo de una sección de contenido */
+  --ink: #0a1a4f;        /* navy del feed: texto sobre claro, campo del pie y de la banda del Despiece (POR APROBAR) */
   --paper: #edf6f9;      /* escarcha: papel tintado hacia el cian, no hacia el lila de SS */
   --white: #ffffff;
   --graphite: #44506b;   /* --muted sobre claro */

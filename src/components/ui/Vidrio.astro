@@ -1,0 +1,46 @@
+---
+/*
+  Vidrio frío (MOVIMIENTO-V2 §4.3): el marco de toda imagen del sitio. La imagen llega empañada, se despeja al cruzar el centro y se vuelve
+  a empañar al salir, con deriva dentro del marco. Todo el movimiento es CSS (base.css, "Vidrio"); aquí solo el marcado.
+    <Vidrio img={fotos.x} sizes="…" ar="4/3" />                          paso (por defecto): deriva + desempañado con su propio view-timeline
+    <Vidrio img={fotos.hero} modo="salida" ar="4/5" loading="eager" fetchpriority="high" sizes="…" />
+                                                                         salida: se acerca y se empaña con el --salida del ancestro [data-salida]
+    <Vidrio ar="1/1"><Equipo /></Vidrio>                                 sin img: el slot va en .vidrio__img y la niebla es un velo radial
+  desde={1024}: la imagen no se pinta por debajo de ese ancho (ver Picture): puede ir eager sin descargarse en móvil.
+  sizes: si no se pasa, el de la entrada de fotos.js (img.sizes) o 100vw.
+  ar → la custom property --ar (no aspect-ratio en línea): un componente puede cambiar la proporción por media query con
+  `.mi-clase { aspect-ratio: 16 / 10 }` sin !important. class y cualquier otro atributo (data-*, id, style extra) caen en el div raíz.
+  Niebla: public/img/fotos/<lugar>-niebla.avif (tools/niebla.mjs, 96 px, ≤2 KB). Decorativa: alt="" + aria-hidden. Va eager si la foto
+  va eager (hero, ficha: el deshielo la necesita en el primer cuadro; con ≤2 KB y bpp < 0,05 nunca es candidata a LCP).
+*/
+import Picture from './Picture.astro';
+import { asset } from '../../lib/url.js';
+interface Img { base: string; w: number; h: number; widths: number[]; alt: string }
+interface Props {
+  img?: Img;
+  sizes?: string;
+  ar?: string;
+  modo?: 'paso' | 'salida';
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  alt?: string;
+  desde?: number;
+  class?: string;
+  style?: string;
+  [attr: string]: unknown;
+}
+const { img, sizes, ar = '4/3', modo = 'paso', loading, fetchpriority, alt, desde, class: cls, style, ...rest } = Astro.props;
+---
+<div class:list={['vidrio', cls]} data-vidrio={modo} style={`--ar:${ar};${style ?? ''}`} {...rest}>
+  {img ? (
+    <Picture img={img} sizes={sizes} loading={loading} fetchpriority={fetchpriority} alt={alt} desde={desde} class="vidrio__img" />
+  ) : (
+    <div class="vidrio__img"><slot /></div>
+  )}
+  {img ? (
+    <img class="vidrio__niebla" src={asset(`${img.base}-niebla.avif`)} alt="" aria-hidden="true" width="96" height={Math.round((96 * img.h) / img.w)} loading={loading === 'eager' ? 'eager' : 'lazy'} decoding="async" />
+  ) : (
+    <span class="vidrio__niebla vidrio__niebla--velo" aria-hidden="true"></span>
+  )}
+  <img class="vidrio__frost" src={asset('img/frost.svg')} alt="" aria-hidden="true" width="400" height="300" decoding="async" />
+</div>

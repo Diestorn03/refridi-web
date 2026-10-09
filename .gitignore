@@ -7,7 +7,8 @@ dist/
 .env.*
 *.log
 .DS_Store
-# Fotos del IG del cliente, hojas de contacto y recortes (62 MB, con personas): sin permiso todavía (Q8/Q21). Nunca al repo público.
+# Originales del IG del cliente, hojas de contacto y recortes (62 MB). Diego autorizó el 2026-10-07 usar las fotos en la propuesta: los
+# recortes que se publican viven en public/img/fotos/ (insumos/fotos.py). Las personas siguen POR CONFIRMAR Q21. Los originales, nunca al repo.
 insumos/
 
 # Documentos internos: no van a un repo público (precio, preguntas al cliente, estado, preparación)

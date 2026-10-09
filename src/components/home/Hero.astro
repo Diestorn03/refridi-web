@@ -1,14 +1,20 @@
 ---
-/* Hero (CONCEPTO §4 Hero, MAPA §3 fila 1). Contrato: <section id="inicio" data-theme="light" aria-labelledby="inicio-title"> primer hijo de
-   <main>; el H1 es el LCP (nunca espera al JS) y no hay data-reveal (regla 13). Un solo CTA (WhatsApp de servicios), sin tel:/mailto: ni
-   tira de datos bajo el CTA: los datos van en la PLACA, fijada a la esquina inferior del gráfico.
-   Gráfico: dibujo propio (sin stock ni fotos: Q8) de una unidad condensadora en axonométrica: cada cara se dibuja plana y una matriz la
-   lleva a su plano (frente: x→(.866,.5); lateral: x→(.866,−.5); tapa: ambas). Colores por tokens (cambia con la paleta). Decorativo.
+/* Hero (CONCEPTO §4 Hero, MAPA §3 fila 1) · escena "Azotea" (MOVIMIENTO-V2 §5.1 + AJ2). Contrato: section#inicio[data-theme=light], primer
+   hijo de <main>, aria-labelledby="inicio-title"; el LCP (la foto o el H1) nunca espera al JS y no hay data-reveal (regla 13): el H1 no se
+   anima. Un solo CTA (WhatsApp de servicios), sin tel:/mailto: ni tira de datos bajo el CTA: los datos van en la PLACA, fijada a la esquina
+   inferior de la foto.
+   Foto: [cliente · IG DYQZ9Y3u2-B] técnico lavando el condensador (4:5), en Vidrio modo "salida". Es el LCP medido (laptop y móvil):
+   eager + fetchpriority high; sizes = el de fotos.hero (con tope de caja). POR CONFIRMAR Q21: sale una persona.
+   Movimiento (CSS de base.css, 0 JS nuevo): al cargar, deshielo de la niebla (1,3 s), la raya del antetítulo se tiende y subtítulo, CTA
+   y placa se asientan (.15/.25/.35 s); al bajar, salida
+   en 3 planos sobre --salida (la sección): placa rápida, texto medio (se atenúa), figura lenta (la foto se acerca y se empaña). <960 px el
+   timeline pasa a la figura y el texto queda quieto. reduced / calm / lite: foto limpia, sin deshielo ni planos.
    Placa: "40+ Años" (POR CONFIRMAR Q10), "Atención 24/7" (POR CONFIRMAR Q11), "A nivel nacional" (Q12); texto real en .sr-only y copia
    aria-hidden; src/scripts/placa.js decodifica una vez las cifras [data-placa-dig] en sus cajas fijas. */
 import Button from '../ui/Button.astro';
+import Vidrio from '../ui/Vidrio.astro';
 import { home, wa, claims, legal } from '../../data/site.js';
-import { asset } from '../../lib/url.js';
+import { fotos } from '../../data/fotos.js';
 
 // "Refrigeración industrial y comercial:" va como antetítulo dentro del mismo H1 (un solo H1, texto intacto para SEO). Los dos puntos
 // quedan solo para el lector de pantalla: a la vista colgaban al final de la línea.
@@ -20,15 +26,10 @@ const sub = home.subtitle.split(' | ');
 const support = claims.support24 ? claims.support24.num.split(/(\d+)/).filter(Boolean) : [];
 const years = claims.years && { digits: claims.years.num.replace(/\D.*$/, ''), rest: claims.years.num.replace(/^\d+/, '') };
 
-// ventiladores del frente (cx en la cara de 360×220) y aspas (grados)
-const fans = [95, 265];
-const blades = [0, 90, 180, 270];
-// codos de retorno (horquillas) en la placa lateral del serpentín
-const bends = [24, 44, 64, 84, 104, 124, 144];
 ---
-<section id="inicio" class="section hero" data-theme="light" aria-labelledby="inicio-title">
+<section id="inicio" class="section hero" data-theme="light" aria-labelledby="inicio-title" data-salida>
   <div class="container hero__grid">
-    <div class="hero__txt">
+    <div class="hero__txt" data-plano="medio">
       <h1 id="inicio-title" class="hero__h1">
         {pre && <span class="hero__pre">{pre.slice(0, -1)}<span class="sr-only">:</span>{' '}</span>}<span class="hero__lema">{lema}</span>
       </h1>
@@ -36,68 +37,11 @@ const bends = [24, 44, 64, 84, 104, 124, 144];
       <div class="btn-row"><Button href={wa('servicios', home.waText)} size="lg" icon="whatsapp" iconPosition="start">{home.cta}</Button></div>
     </div>
 
-    <div class="hero__fig">
-      <div class="panel-hielo">
-        <svg class="uc" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
-          <defs>
-            <pattern id="hero-aletas" width="5" height="8" patternUnits="userSpaceOnUse"><path class="uc__aleta" d="M2.5 0V8" /></pattern>
-          </defs>
-          <!-- encuadre: el dibujo arriba a la derecha, el ángulo inferior izquierdo libre para la placa -->
-          <g transform="translate(46 8) scale(.9)">
-          <!-- losa -->
-          <polygon class="uc__losa-top" points="238,250 584.4,450 376.6,570 30.2,370" />
-          <polygon class="uc__losa-a" points="30.2,370 376.6,570 376.6,584 30.2,384" />
-          <polygon class="uc__losa-b" points="376.6,570 584.4,450 584.4,464 376.6,584" />
-          <!-- tapa -->
-          <g transform="matrix(.866 .5 .866 -.5 64.8 150)">
-            <rect class="uc__tapa" width="360" height="200" />
-            <rect class="uc__fino" x="14" y="14" width="332" height="172" />
-          </g>
-          <!-- lateral: serpentín con aletas, horquillas y conexiones -->
-          <g transform="matrix(.866 -.5 0 1 376.6 330)">
-            <rect class="uc__lado" width="200" height="220" />
-            <rect class="uc__base" y="204" width="200" height="16" />
-            <rect class="uc__cara" x="10" y="12" width="26" height="148" />
-            {bends.map((t) => <path class="uc__fino" d={`M36 ${t - 7}h-12a7 7 0 0 0 0 14h12`} />)}
-            <rect class="uc__aletas" x="40" y="12" width="150" height="148" />
-            <rect class="uc__hueco" x="10" y="166" width="180" height="32" />
-            <circle class="uc__cara" cx="34" cy="180" r="11" />
-            <circle class="uc__cara" cx="70" cy="186" r="6" />
-          </g>
-          <!-- frente: dos ventiladores con su rejilla; detrás, las aletas del serpentín -->
-          <g transform="matrix(.866 .5 0 1 64.8 150)">
-            <rect class="uc__cara" width="360" height="220" />
-            <rect class="uc__base" y="204" width="360" height="16" />
-            {fans.map((cx) => (
-              <g transform={`translate(${cx} 102)`}>
-                <circle class="uc__aro" r="78" />
-                <circle class="uc__hueco" r="70" />
-                <circle class="uc__aletas" r="70" />
-                {blades.map((a) => <path class="uc__aspa" transform={`rotate(${a})`} d="M-5-11C-20-28-24-48-11-62C3-68 20-61 24-50C17-34 10-21 6-11Z" />)}
-                <circle class="uc__buje" r="11" />
-                <circle class="uc__cara" r="4" />
-                <path class="uc__rejilla" d="M-70 0H70M0-70V70" />
-                {[62, 52, 42, 32, 22].map((r) => <circle class="uc__rejilla" r={r} />)}
-              </g>
-            ))}
-            {[[8, 8], [352, 8], [8, 196], [352, 196]].map(([x, y]) => <circle class="uc__tornillo" cx={x} cy={y} r="2.2" />)}
-          </g>
-          <!-- silueta -->
-          <path class="uc__silueta" d="M64.8 150 238 50 549.8 230V450L376.6 550 64.8 370Z" />
-          <!-- tubería: línea de líquido (desnuda) y succión (aislada, con juntas del aislante); salen del lateral y suben -->
-          <g class="uc__tubos">
-            <path class="uc__liq-a" d="M437.2 481 600 575V-20" />
-            <path class="uc__liq-b" d="M437.2 481 600 575V-20" />
-            <path class="uc__suc-a" d="M406 491 579.2 591V-20" />
-            <path class="uc__suc-b" d="M406 491 579.2 591V-20" />
-            <path class="uc__suc-c" d="M406 491 579.2 591V-20" />
-          </g>
-          </g>
-        </svg>
-        <img class="panel-hielo__frost" src={asset('img/frost.svg')} alt="" aria-hidden="true" width="400" height="300" decoding="async" />
-      </div>
+    <div class="hero__fig" data-plano="lento">
+      {/* POR CONFIRMAR Q21 (persona) */}
+      <Vidrio img={fotos.hero} modo="salida" ar="4/5" loading="eager" fetchpriority="high" />
 
-      <div class="placa">
+      <div class="placa" data-plano="rapido">
         <p class="placa__marca">{legal.company}</p>
         <ul class="placa__datos" role="list">
           {years && (
@@ -135,7 +79,24 @@ const bends = [24, 44, 64, 84, 104, 124, 144];
     display: block; margin-bottom: 0.9rem;
     font-stretch: var(--label-stretch); font-weight: 600; font-size: var(--step-1); line-height: 1.3; letter-spacing: 0.01em; color: var(--stroke);
   }
-  .hero__pre::before { content: ''; display: inline-block; width: 28px; height: 3px; margin-right: 0.65em; vertical-align: 0.3em; background: var(--cyan); }
+  .hero__pre::before { content: ''; display: inline-block; width: 28px; height: 3px; margin-right: 0.65em; vertical-align: 0.3em; background: var(--cyan); transform-origin: left; }
+  /* la raya se tiende al cargar, con la misma puerta que el deshielo (sin VT, sin calm ni lite) */
+  @keyframes tender { from { scale: 0 1; } }
+  /* t0 (revisión final de v2): subtítulo, CTA y placa se asientan por tiempo tras el H1 (que no se anima: LCP), con la misma puerta que el
+     deshielo. backwards sin forwards: al terminar manda la salida en planos (la placa la lleva en la misma lista, segunda) */
+  @keyframes hero-asentar { from { opacity: 0; translate: 0 1.5rem; } }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js:not(.vt):not(.calm):not(.is-lite)) .hero__pre::before { animation: tender 0.5s var(--ease-brand) 0.15s both; }
+    :global(html.js:not(.vt):not(.calm):not(.is-lite)) .hero__sub { animation: hero-asentar 0.7s var(--ease-brand) 0.15s backwards; }
+    :global(html.js:not(.vt):not(.calm):not(.is-lite)) .hero__txt .btn-row { animation: hero-asentar 0.7s var(--ease-brand) 0.25s backwards; }
+    :global(html.js:not(.vt):not(.calm):not(.is-lite)) .placa { animation: hero-asentar 0.7s var(--ease-brand) 0.35s backwards; }
+    @supports (animation-timeline: view()) {
+      :global(html.js:not(.vt):not(.calm):not(.is-lite)) .placa {
+        animation: plano linear both, hero-asentar 0.7s var(--ease-brand) 0.35s backwards;
+        animation-duration: auto, 0.7s; animation-timeline: --salida, auto; animation-range: exit 0% exit 100%, normal;
+      }
+    }
+  }
   .hero__lema { display: block; }
   .hero__lema::first-letter { text-transform: uppercase; }
   .hero__sub {
@@ -147,40 +108,11 @@ const bends = [24, 44, 64, 84, 104, 124, 144];
   .hero__sub span { position: relative; margin-left: 1.3em; }
   .hero__sub span::before { content: '|'; content: '|' / ''; position: absolute; left: -0.82em; font-weight: 400; color: color-mix(in srgb, var(--muted) 55%, transparent); }
 
-  /* ---------- gráfico ---------- */
+  /* ---------- foto ---------- */
   .hero__fig { position: relative; width: 100%; max-width: 36rem; container-type: inline-size; margin-bottom: calc(var(--gutter) * 0.5); }
-  /* marco: .panel-hielo de base.css (compartido con las fichas). «acero» (MARCA §2.2): el aislante también pasa a acero */
-  :global([data-palette='acero']) .uc .uc__suc-b { stroke: color-mix(in srgb, var(--ink) 14%, var(--surface)); }
-  .uc { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* marco: .vidrio de base.css (Vidrio.astro), en 4:5 */
 
-  .uc { --l: color-mix(in srgb, var(--ink) 78%, transparent); }
-  .uc :is(rect, circle, polygon, path) { stroke: var(--l); stroke-width: 1.1; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-  .uc__cara { fill: var(--surface); }
-  .uc__lado { fill: color-mix(in srgb, var(--ink) 9%, var(--surface)); }
-  .uc__tapa { fill: color-mix(in srgb, var(--cyan) 6%, var(--surface)); }
-  .uc__base { fill: color-mix(in srgb, var(--ink) 16%, var(--surface)); }
-  .uc__hueco { fill: color-mix(in srgb, var(--ink) 20%, var(--surface)); }
-  .uc__aletas { fill: url(#hero-aletas); }
-  .uc .uc__aleta { stroke: color-mix(in srgb, var(--ink) 34%, transparent); stroke-width: 0.9; vector-effect: none; }
-  .uc__aro { fill: color-mix(in srgb, var(--ink) 6%, var(--surface)); }
-  .uc__aspa { fill: color-mix(in srgb, var(--ink) 34%, var(--surface)); }
-  .uc__buje { fill: var(--cyan); }
-  .uc .uc__rejilla { fill: none; stroke-width: 0.75; stroke: color-mix(in srgb, var(--ink) 62%, transparent); }
-  .uc .uc__fino { fill: none; stroke-width: 0.8; }
-  .uc__tornillo { fill: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
-  .uc .uc__silueta { fill: none; stroke: var(--ink); stroke-width: 1.6; }
-  .uc__losa-top { fill: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
-  .uc__losa-a { fill: color-mix(in srgb, var(--ink) 12%, var(--surface)); }
-  .uc__losa-b { fill: color-mix(in srgb, var(--ink) 18%, var(--surface)); }
-  /* tubos: trazo que escala con el dibujo (no non-scaling): contorno + relleno + juntas del aislante */
-  .uc .uc__tubos path { fill: none; vector-effect: none; stroke-linejoin: round; }
-  .uc .uc__liq-a { stroke: var(--l); stroke-width: 8; }
-  .uc .uc__liq-b { stroke: var(--surface); stroke-width: 5; }
-  .uc .uc__suc-a { stroke: var(--l); stroke-width: 22; }
-  .uc .uc__suc-b { stroke: color-mix(in srgb, var(--cyan) 30%, var(--surface)); stroke-width: 19.5; }
-  .uc .uc__suc-c { stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 19.5; stroke-dasharray: 1.4 34; }
-
-  /* ---------- placa de datos: chapa con remaches, fijada a la esquina inferior del gráfico ---------- */
+  /* ---------- placa de datos: chapa con remaches, fijada a la esquina inferior de la foto ---------- */
   .placa {
     --rivet: color-mix(in srgb, var(--ink) 34%, var(--surface));
     position: absolute; left: calc(var(--gutter) * -0.5); bottom: calc(var(--gutter) * -0.5);
@@ -213,9 +145,12 @@ const bends = [24, 44, 64, 84, 104, 124, 144];
   .placa__dig--2 { width: 2ch; }
 
   @media (min-width: 960px) {
-    .hero { min-height: 100svh; display: grid; align-items: center; }
+    /* el hero mide UN viewport (la foto, alta por el alto libre, + este padding = 100svh) y su --salida va sin inset (base.css): la salida
+       en planos corre de scrollY 0 a 100svh (a la mitad, la placa va en −12vh respecto de la figura) */
+    .hero { min-height: 100svh; display: grid; align-items: center; padding-bottom: calc(132px - clamp(28px, 6svh, 72px) - var(--gutter) * 0.5); }
     .hero__grid { grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); }
-    /* en pantallas bajas el gráfico cabe en el primer viewport (svh: no cambia tras la carga) */
-    .hero__fig { justify-self: end; width: min(100%, calc(100svh - var(--header-h) - 132px)); min-width: 340px; }
+    /* en pantallas bajas la foto cabe en el primer viewport: el mismo alto libre que tenía el gráfico cuadrado, a 4:5 (svh: no cambia tras
+       la carga) */
+    .hero__fig { justify-self: end; width: min(100%, calc((100svh - var(--header-h) - 132px) * 0.8)); min-width: 272px; }
   }
 </style>

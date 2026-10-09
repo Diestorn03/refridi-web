@@ -1,40 +1,204 @@
 ---
-/* Servicios (MAPA §3 fila 2, CONCEPTO §4 Táctil). Contrato: <section id="servicios" data-theme="light" aria-labelledby="servicios-title">,
-   hijo directo de <main>. Las 3 entradas de site.js como filas grandes: el nombre es el RÓTULO VIAJERO ([data-rotulo] dentro del <a href>
-   a /servicios/<slug>/; Base.astro lo nombra en pageswap). Debe tener el mismo cuerpo de letra que el [data-rotulo-dest] de la página de
-   servicio: los dos usan la clase global .rotulo de base.css (solo se traslada, no se deforma).
+/* Servicios (MAPA §3 fila 2, CONCEPTO §4 Táctil) · escenas "Despiece" (MOVIMIENTO-V2 AJ1) y "Tres vidrios" (§5.2).
+   Contrato: <section id="servicios" data-theme="light" aria-labelledby="servicios-title">, hijo directo de <main>. Las 3 entradas de
+   site.js como filas grandes: el nombre es el RÓTULO VIAJERO ([data-rotulo] dentro del <a href> a /servicios/<slug>/; Base.astro lo nombra
+   en pageswap), con la clase global .rotulo (solo se traslada, no se deforma). Nada anima .fila, .fila__link ni el rótulo.
    La fila entera es clicable (enlace estirado); el nombre del enlace es solo el del servicio. Hover (solo puntero fino) y :focus-visible:
-   la flecha avanza .4rem y aparece un ::before hielo. :active = "Asiento" de base.css (.fila). */
+   la flecha avanza .4rem y aparece un ::before hielo. :active = "Asiento" de base.css (.fila).
+
+   DESPIECE (escena fijada, antes de las filas; mismo patrón que Pull-down y Cortina): .despiece__pista (alto --alto: 200svh; 160svh con
+   pointer: coarse; view-timeline --despiece, inset 0) > .despiece__sticky (sticky, 100svh). Banda OSCURA (data-theme="dark" en la pista: el
+   header cambia de tema encima; ritmo claro → oscuro → claro, revisión final de v2, POR APROBAR por Diego: quitar el atributo la devuelve a
+   papel). La unidad condensadora (Equipo encuadre "despiece", a .76 dentro del marco para dejar sitio) se despieza y se vuelve a armar:
+   tapa arriba (con un giro de −4°), ventiladores arriba a la izquierda girando, panel del serpentín y tubería aislada hacia afuera a la
+   derecha, losa abajo. Cada pieza va en su rango contain [a, 100 − a] (a = 0, 5 … 25: salen de una en una): sale en el primer 22 %, deriva
+   un 10 % más mientras se lee y vuelve en el último 22 %; la primera en salir es la última en volver. Los rótulos (chips HTML) van DENTRO
+   del div de su pieza (Equipo, rotulos): viajan con ella y solo animan opacity. La figura entra (10vh, .92) mientras el sticky sube,
+   EMPAÑADA (.despiece__vaho, el velo del Vidrio: verbo DESEMPAÑAR de §3): se despeja al fijarse (contain 0 → 14 %) y se vuelve a empañar
+   al soltarse (contain 86 → 100 %, hasta .7).
+   Solo translate / rotate / scale / opacity, 0 JS. Puerta: no-preference + min-height 600px + view() + sin calm ni lite. Fuera (y por
+   defecto): equipo armado, estático, rótulos visibles, figura a su ancho (el tope por alto de ventana solo vale dentro de la puerta).
+
+   TRES VIDRIOS: cada fila gana su imagen en Vidrio (paso): mantenimiento y restauración con su foto; instalación con el equipo de cerca
+   (Equipo encuadre "frente"; sus ventiladores quedan quietos: el giro se quitó en la QA de v2, §5.2 aceptación 4). li.fila da el timeline --fila:
+   los trabajos se asientan uno tras otro y la flecha entra desde la izquierda (span interno: la .fila__flecha conserva su hover). */
 import Icon from '../ui/Icon.astro';
+import Vidrio from '../ui/Vidrio.astro';
+import Equipo from '../ui/Equipo.astro';
 import { services } from '../../data/site.js';
+import { fotos } from '../../data/fotos.js';
 import { url } from '../../lib/url.js';
+
+// Rótulos del despiece: pieza que los lleva y texto. Ancla y desplazamiento, en el CSS (.chip--<pieza>), junto a los de la pieza.
+const rotulos = { tapa: 'Gabinete', fan0: 'Ventiladores', serp: 'Serpentín', tubos: 'Tubería aislada' };
 ---
 <section id="servicios" class="section servicios" data-theme="light" aria-labelledby="servicios-title">
   <div class="container">
     <div class="section__head">
       <span class="eyebrow">Servicios</span>
-      <h2 id="servicios-title">Del cálculo del proyecto al mantenimiento de cada día</h2>
-      <p class="lead">Tres líneas de trabajo para cavas, cámaras y unidades de compresión. Cada una tiene su página con el alcance completo.</p>
+      <h2 id="servicios-title" data-contrae>Del cálculo del proyecto al mantenimiento de cada día</h2>
+      <p class="lead" data-reveal>Tres líneas de trabajo para cavas, cámaras y unidades de compresión. Cada una tiene su página con el alcance completo.</p>
     </div>
+  </div>
+
+  <div class="despiece__pista" data-theme="dark">
+    <div class="despiece__sticky">
+      <div class="container despiece__rejilla">
+        <div class="despiece__fig" role="img" aria-label="Unidad condensadora despiezada: gabinete, ventiladores, serpentín y tubería aislada">
+          <Equipo encuadre="despiece" rotulos={rotulos} />
+          <span class="despiece__vaho" aria-hidden="true"></span>
+        </div>
+        <div class="despiece__txt">
+          <p class="eyebrow despiece__lema">Diagnósticos precisos</p>{/* [cliente · IG DYDlNeHjlEV] ("No ponemos parches" queda solo en el Pull-down) */}
+          <h3 class="despiece__titulo"><span class="despiece__pre">Así trabajamos:</span> cada pieza, revisada.</h3>{/* [redactado] */}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
     <ul class="filas" role="list">
       {services.map((s) => (
         <li class="fila">
           <h3 class="fila__titulo">
             <a class="fila__link" href={url(`/servicios/${s.slug}/`)}><span class="rotulo" data-rotulo>{s.name}</span></a>
           </h3>
+          {fotos[s.slug] ? (
+            <Vidrio class="fila__media" img={fotos[s.slug]} ar="4/3" sizes="(min-width: 900px) 232px, 92vw" />
+          ) : (
+            <Vidrio class="fila__media" ar="4/3" style="--vidrio-zoom:1.06"><Equipo encuadre="frente" /></Vidrio>
+          )}
           <ul class="fila__trabajos" role="list">{s.trabajos.slice(0, 4).map((t) => <li>{t}</li>)}</ul>
-          <span class="fila__flecha" aria-hidden="true"><Icon name="arrow-right" size={32} stroke={1.25} /></span>
+          <span class="fila__flecha" aria-hidden="true"><span class="fila__flecha-in"><Icon name="arrow-right" size={32} stroke={1.25} /></span></span>
         </li>
       ))}
     </ul>
   </div>
 </section>
 
+<script>
+  import '../../scripts/contrae.js';
+</script>
+
 <style>
+  .servicios { --alto: 200svh; }
+  @media (pointer: coarse) { .servicios { --alto: 160svh; } }
+
+  /* ---------- despiece: estático (por defecto) = equipo armado con sus rótulos, sobre la banda oscura ---------- */
+  .despiece__pista { background: var(--bg); color: var(--fg); }
+  .despiece__sticky { padding-block: clamp(48px, 7vw, 112px); }
+  .despiece__rejilla { display: grid; gap: clamp(24px, 3svh, 40px); align-items: center; }
+  @media (min-width: 900px) {
+    .despiece__rejilla { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: clamp(40px, 6vw, 96px); }
+  }
+  /* marco: un panel algo más claro que la banda; cuadrado, alto por aspect-ratio (CLS 0). El dibujo, en blanco y cian (--surface claro
+     solo aquí dentro). container: los rótulos se miden en su ancho */
+  .despiece__fig {
+    --u: calc(100cqw / 800); /* 1 unidad de la caja del encuadre "despiece" (800); se resuelve en los hijos, contra este contenedor */
+    --surface: var(--white);
+    position: relative; container-type: inline-size; aspect-ratio: 1; overflow: clip; justify-self: center; width: min(100%, 40rem);
+    border-radius: var(--radius-lg); background: color-mix(in srgb, var(--accent) 9%, var(--ink)); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  @media (min-width: 900px) { .despiece__fig { width: min(100%, 44rem); } }
+  /* vaho: el velo del Vidrio (base.css .vidrio__niebla--velo) en hielo; por encima del dibujo y los rótulos; por defecto, despejado */
+  .despiece__vaho {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--paper) 55%, transparent), color-mix(in srgb, var(--paper) 85%, transparent));
+  }
+  .despiece__lema { font-size: var(--step-1); }
+  .despiece__titulo { font-size: var(--step-3); line-height: 1.02; }
+  .despiece__pre { display: block; }
+
+  /* piezas (cada una, su capa: Equipo encuadre "despiece") y rótulos. Pieza: --x --y = desplazamiento con la pieza separada (unidades de
+     la caja de 800), --r = giro, --a = arranque en % de contain (la vuelta, simétrica). Rótulo (dentro de su pieza, hereda --a):
+     --l --t = ancla en unidades del dibujo (Equipo da la caja de la pieza en --bx --by --bw --bh), --ax --ay = qué punto del rótulo cae en
+     el ancla. Armado (estático) y separado (escena) llevan anclas distintas: cada uno donde no pisa a otro rótulo. */
+  .despiece__fig :global(.uc__p--tapa) { --x: 60; --y: -205; --r: -4deg; --a: 0; }
+  .despiece__fig :global(.uc__p--fan0) { --x: -140; --y: -205; --a: 5; }
+  .despiece__fig :global(.uc__p--fan1) { --x: -135; --y: -265; --a: 10; }
+  .despiece__fig :global(.uc__p--serp) { --x: 190; --y: 95; --a: 15; }
+  .despiece__fig :global(.uc__p--tubos) { --x: 215; --y: 150; --a: 20; }
+  .despiece__fig :global(.uc__p--losa) { --x: 0; --y: 140; --a: 25; }
+  .despiece__fig :global(.chip--tapa) { --l: 422; --t: 173; }
+  .despiece__fig :global(.chip--fan0) { --l: 147; --t: 386; --ay: 0; }
+  .despiece__fig :global(.chip--serp) { --l: 520; --t: 480; }
+  .despiece__fig :global(.chip--tubos) { --l: 570; --t: 40; --ax: -100%; }
+
+  .despiece__fig :global(.chip) {
+    position: absolute; z-index: 1;
+    left: calc((var(--l) - var(--bx)) / var(--bw) * 100%); top: calc((var(--t) - var(--by)) / var(--bh) * 100%);
+    transform: translate(var(--ax, -50%), var(--ay, -50%));
+    display: inline-flex; align-items: center; gap: 0.5em; padding: 0.35em 0.75em 0.35em 0.6em; white-space: nowrap;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); border-radius: var(--radius);
+    background: color-mix(in srgb, var(--white) 8%, var(--ink)); color: var(--fg);
+    box-shadow: 0 10px 22px -12px rgb(0 0 0 / 0.6);
+    font-family: var(--font-display); font-stretch: var(--label-stretch); font-weight: 600; font-size: var(--step--1); line-height: 1.2;
+  }
+  .despiece__fig :global(.chip)::before { content: ''; flex: none; width: 7px; height: 7px; background: var(--cyan); }
+  @media (max-width: 479px) { .despiece__fig :global(.chip) { font-size: 0.75rem; } }
+
+  /* ---------- despiece: escena (rango contain de la pista = mientras el sticky está fijo) ---------- */
+  @keyframes despiece {
+    0%, 100% { translate: 0 0; rotate: 0deg; }
+    22% { translate: calc(var(--x) * var(--u) * 0.9) calc(var(--y) * var(--u) * 0.9); rotate: var(--r, 0deg); }
+    78% { translate: calc(var(--x) * var(--u)) calc(var(--y) * var(--u)); rotate: var(--r, 0deg); }
+  }
+  @keyframes despiece-chip { 0%, 14% { opacity: 0; } 22%, 78% { opacity: 1; } 86%, 100% { opacity: 0; } }
+  /* las aspas giran todo el rango de su ventilador (2 vueltas): sale, espera y vuelve girando */
+  @keyframes despiece-giro { to { rotate: 720deg; } }
+  @keyframes despiece-txt { from { opacity: 0; translate: 0 3rem; } }
+  @keyframes despiece-entrar { from { translate: 0 10vh; scale: 0.92; } }
+  /* keyframes por rango del timeline (cover entero): empañado al subir, despejado mientras está fijo, empañado al irse */
+  @keyframes despiece-vaho {
+    entry 0%, contain 0% { opacity: 1; }
+    contain 14%, contain 86% { opacity: 0; }
+    contain 100%, exit 100% { opacity: 0.7; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) and (min-height: 600px) {
+    @supports (animation-timeline: view()) {
+      /* inset 0: sin él el view-timeline toma el scroll-padding-top del html y "contain" empezaría tarde */
+      :global(:root:not(.calm):not(.is-lite)) .despiece__pista { height: var(--alto); view-timeline: --despiece block; view-timeline-inset: 0; }
+      :global(:root:not(.calm):not(.is-lite)) .despiece__sticky {
+        position: sticky; top: 0; height: 100svh; display: grid; align-content: center; overflow: clip;
+        padding-block: calc(var(--header-h) + 3svh) 3svh;
+      }
+      /* dentro de la escena la figura cabe en el alto de la ventana (svh: no cambia tras la carga) */
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig { width: min(100%, 40rem, calc(100svh - var(--header-h) - 15rem)); }
+      @media (min-width: 900px) {
+        :global(:root:not(.calm):not(.is-lite)) .despiece__fig { width: min(100%, 44rem, calc(100svh - var(--header-h) - 12svh)); }
+      }
+      /* texto y figura llegan mientras el sticky sube y terminan justo al fijarse (entry 100 % = contain 0 %) */
+      :global(:root:not(.calm):not(.is-lite)) .despiece__txt, :global(:root:not(.calm):not(.is-lite)) .despiece__fig {
+        animation: despiece-txt var(--ease-brand) both; animation-duration: auto; animation-timeline: --despiece; animation-range: entry 30% entry 100%;
+      }
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig { animation-name: despiece-entrar; }
+      :global(:root:not(.calm):not(.is-lite)) .despiece__vaho {
+        animation: despiece-vaho linear both; animation-duration: auto; animation-timeline: --despiece; animation-range: normal;
+      }
+      /* el shorthand animation reinicia animation-timeline: timeline y rango van después */
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.uc__p), :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.chip) {
+        animation: despiece linear both; animation-duration: auto; animation-timeline: --despiece;
+        animation-range: contain calc(var(--a) * 1%) contain calc(100% - var(--a) * 1%);
+      }
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.chip) { animation-name: despiece-chip; }
+      /* separados: "Ventiladores" encima de los ventiladores (armado, debajo), "Gabinete" en el centro de la tapa, "Serpentín" más adentro */
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.chip--fan0) { --l: 80; --t: 214; --ax: 0; --ay: -100%; }
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.chip--tapa) { --l: 330; --t: 185; }
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.chip--serp) { --l: 470; --t: 470; } /* lejos de la tubería, que pinta encima */
+      /* aspas: plano dentro de la matriz del frente (Equipo): giro elíptico en el compositor, con el rango de su ventilador (--a) */
+      :global(:root:not(.calm):not(.is-lite)) .despiece__fig :global(.uc__helice) {
+        animation: despiece-giro linear both; animation-duration: auto; animation-timeline: --despiece;
+        animation-range: contain calc(var(--a) * 1%) contain calc(100% - var(--a) * 1%);
+      }
+    }
+  }
+
+  /* ---------- filas ---------- */
   .filas { list-style: none; border-top: 1px solid var(--line); }
   .fila {
     position: relative; isolation: isolate;
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'titulo flecha' 'trabajos trabajos';
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'titulo flecha' 'media media' 'trabajos trabajos';
     gap: 14px 24px; align-items: center; padding-block: clamp(24px, 3.2vw, 44px); border-bottom: 1px solid var(--line);
   }
   /* hielo: sangra hacia el margen para que el texto siga alineado con el encabezado */
@@ -47,10 +211,15 @@ import { url } from '../../lib/url.js';
   .fila__link { color: var(--fg); }
   .fila__link::after { content: ''; position: absolute; inset: 0; } /* enlace estirado: toda la fila */
   .fila:active .fila__link::after { inset: -1.6%; } /* el hundido (scale .97) no deja el borde de la fila fuera del enlace (base.css) */
+  .fila__media { grid-area: media; aspect-ratio: 16 / 9; margin-block: 4px; }
   .fila__trabajos { grid-area: trabajos; list-style: none; display: grid; gap: 6px; color: var(--muted); font-size: var(--step-0); line-height: 1.4; }
   .fila__trabajos li { position: relative; padding-left: 18px; }
   .fila__trabajos li::before { content: ''; position: absolute; left: 0; top: 0.68em; width: 8px; height: 2px; background: var(--cyan); }
+  .fila__trabajos li:nth-child(2) { --i: 1; }
+  .fila__trabajos li:nth-child(3) { --i: 2; }
+  .fila__trabajos li:nth-child(4) { --i: 3; }
   .fila__flecha { grid-area: flecha; display: grid; place-items: center; width: var(--tap); height: var(--tap); color: var(--link); transition: transform var(--d-1) var(--ease-brand); }
+  .fila__flecha-in { display: grid; }
 
   @media (hover: hover) and (pointer: fine) {
     .fila:hover::before { opacity: 1; }
@@ -64,6 +233,25 @@ import { url } from '../../lib/url.js';
   }
 
   @media (min-width: 900px) {
-    .fila { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto; grid-template-areas: 'titulo trabajos flecha'; column-gap: clamp(24px, 4vw, 64px); }
+    .fila {
+      grid-template-columns: clamp(160px, 16vw, 232px) minmax(0, 1.1fr) minmax(0, 1fr) auto; grid-template-areas: 'media titulo trabajos flecha';
+      column-gap: clamp(24px, 3.4vw, 56px);
+    }
+    .fila__media { aspect-ratio: 4 / 3; margin-block: 0; }
+  }
+
+  /* ---------- filas: escena (§5.2) ---------- */
+  @keyframes fila-flecha { from { opacity: 0; translate: -1.25rem 0; } }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :global(:root:not(.calm):not(.is-lite)) .fila { view-timeline: --fila block; }
+      :global(:root:not(.calm):not(.is-lite)) .fila__trabajos li {
+        animation: asentar var(--ease-brand) both; animation-duration: auto; animation-timeline: --fila;
+        animation-range: cover calc(12% + var(--i, 0) * 5%) cover calc(36% + var(--i, 0) * 5%);
+      }
+      :global(:root:not(.calm):not(.is-lite)) .fila__flecha-in {
+        animation: fila-flecha var(--ease-brand) both; animation-duration: auto; animation-timeline: --fila; animation-range: cover 12% cover 36%;
+      }
+    }
   }
 </style>

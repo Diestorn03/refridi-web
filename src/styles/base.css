@@ -1,7 +1,7 @@
 /* ==========================================================
    Refridi — estilos base (F0: solo la fundación edita este archivo). Los tokens viven en tokens.css.
    Utilidades para todo componente: .container .section .section__head .eyebrow .label .num .lead .muted .link .btn-row .rotulo
-   .panel-hielo .sr-only .btn (+ los ganchos data-reveal / data-stagger, ver "Reveals").
+   .foto .sr-only .btn (+ los ganchos data-reveal / data-stagger, ver "Reveals").
    ========================================================== */
 
 /* ---------- fallback métrico: generado con `node tools/font-metrics.mjs` (lee head/hhea/OS2/cmap/hmtx de los woff2 del paquete y del Arial
@@ -27,6 +27,7 @@ main:focus, main > section[tabindex='-1']:focus { outline: none; } /* destinos d
 img, svg, video, canvas { display: block; max-width: 100%; }
 img, video { height: auto; }
 picture { display: contents; }
+source { display: none; } /* con picture en contents, cada <source> sería un hijo más del flex o del grid (con su gap) */
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 input, select, textarea { font: inherit; color: inherit; }
@@ -80,13 +81,8 @@ main > section[id] { scroll-margin-top: calc(-1 * (var(--header-h) + 16px)); }
   font-family: var(--font-display); font-stretch: 100%; font-weight: 650; font-size: var(--step-3); line-height: 1.05; letter-spacing: -0.01em;
 }
 
-/* Panel hielo: el marco de los gráficos propios (hero del home y fichas de servicio), con la escarcha estática encima (.panel-hielo__frost) */
-.panel-hielo {
-  position: relative; overflow: hidden; aspect-ratio: 1; border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--cyan) 11%, var(--paper)); box-shadow: inset 0 0 0 1px var(--line);
-}
-[data-palette='acero'] .panel-hielo { background: color-mix(in srgb, var(--ink) 7%, var(--paper)); } /* «acero»: el cian se reduce a filetes */
-.panel-hielo__frost { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; opacity: 0.9; }
+/* Foto suelta en una sección (Picture.astro con class="foto"): ancho del bloque, alto por su width/height; fondo hielo mientras carga */
+.foto { width: 100%; object-fit: cover; border-radius: var(--radius-lg); background: color-mix(in srgb, var(--cyan) 11%, var(--paper)); }
 
 /* ---------- tipo ---------- */
 /* etiqueta / placa / rótulo / cifras: Archivo a ancho de etiqueta, peso 600, tabular-nums. Sin mayúsculas ni códigos (CONCEPTO §8) */
@@ -125,14 +121,28 @@ main > section[id] { scroll-margin-top: calc(-1 * (var(--header-h) + 16px)); }
 a.btn { position: relative; }
 :is(a.btn, a.fila):active::after { content: ''; position: absolute; inset: -1.6%; }
 
-/* ---------- reveals (CONCEPTO §4 Revelado) ----------
-   [data-reveal] y los hijos de [data-stagger]: SOLO por debajo del primer viewport (regla 13) y en bloques de ≤1 viewport de alto
-   (el rango es entry 5 %–70 % del propio elemento). El escalonado sale de --i (los hijos de [data-stagger] lo traen de :nth-child;
-   un [data-reveal] suelto puede fijarlo con style="--i:2").
-   · Con view(): CSS puro (fuera del hilo principal con scroll nativo). Sin JS sigue funcionando.
-   · Sin view() (Firefox, Safari <26): fallback GSAP de engine.js. Pre-hide solo bajo html.js, con failsafe de 4 s si el engine no arranca.
-   · reduced / calm: estado final estático. lite: solo opacity. */
-@keyframes asentar { from { opacity: 0; transform: translateY(1.5rem); } }
+/* ==========================================================
+   MOVIMIENTO v2 "Descenso" (docs/MOVIMIENTO-V2.md §4). PUERTA ÚNICA de todo lo ligado al scroll:
+     @media (prefers-reduced-motion: no-preference) { @supports (animation-timeline: view()) { :root:not(.calm):not(.is-lite) … } }
+   Por defecto el CSS pinta el ESTADO FINAL: eso cubre reduced, calm, lite, sin view() (Firefox, Safari <26) y sin JS.
+   Keyframes: solo translate / rotate / scale / opacity (propiedades individuales, nunca `transform`: no pisan el :active ni otras
+   transformadas). Nunca se animan .fila, .fila__link, .rotulo ni [data-rotulo] (el rótulo es el viajero de la VT).
+   Lo ligado al scroll va en `linear`; lo que corre por tiempo, en var(--ease-brand). Sin bucles: la página quieta no anima nada.
+   ========================================================== */
+
+/* ---------- reveals (§4.2) ----------
+   [data-reveal] y los hijos de [data-stagger]:                       asentar   opacity 0 + translate 0 3rem
+   [data-reveal="profundo"] y los hijos de [data-stagger="profundo"]: profundo  opacity 0 + translate 0 4rem + scale .94 (escalón --c, o --i)
+   los hijos de [data-stagger="lado"]:                                lado      opacity 0 + translate 2.5rem 0 (entran desde la derecha)
+   Rango en `cover` (≈30 % de viewport + elemento: ~280 px a 900 de alto), escalonado con --i (los hijos de [data-stagger] lo traen de
+   :nth-child; un [data-reveal] suelto puede fijarlo con style="--i:2"). SOLO por debajo del primer viewport (regla 13).
+   El pie usa entry: al final del documento no queda recorrido para llegar a cover 30 % y se quedaría a medias.
+   · Con view(): CSS puro. Sin JS sigue funcionando. lite: solo opacity.
+   · Sin view(): fallback GSAP de engine.js (y 48 / profundo y 64 + scale .94 / lado x 40). Pre-hide solo bajo html.js, failsafe de 4 s.
+   · reduced / calm: estado final estático. */
+@keyframes asentar { from { opacity: 0; translate: 0 3rem; } }
+@keyframes asentar-profundo { from { opacity: 0; translate: 0 4rem; scale: 0.94; } }
+@keyframes asentar-lado { from { opacity: 0; translate: 2.5rem 0; } }
 @keyframes asentar-lite { from { opacity: 0; } }
 @keyframes rf-failsafe { to { opacity: 1; } }
 [data-stagger] > :nth-child(2) { --i: 1; }
@@ -146,13 +156,122 @@ a.btn { position: relative; }
       animation: asentar var(--ease-brand) both;
       animation-duration: auto;
       animation-timeline: view();
-      animation-range: entry calc(5% + var(--i, 0) * 6%) entry calc(70% + var(--i, 0) * 6%);
+      animation-range: cover calc(var(--i, 0) * 4%) cover calc(30% + var(--i, 0) * 4%);
     }
+    html:not(.calm) :is([data-reveal='profundo'], [data-stagger='profundo'] > *) {
+      animation-name: asentar-profundo;
+      animation-range: cover calc(var(--c, var(--i, 0)) * 6%) cover calc(34% + var(--c, var(--i, 0)) * 6%);
+    }
+    html:not(.calm) [data-stagger='lado'] > * { animation-name: asentar-lado; }
+    html:not(.calm) body > footer :is([data-reveal], [data-stagger] > *) { animation-range: entry calc(var(--i, 0) * 8%) entry calc(60% + var(--i, 0) * 8%); }
     html.is-lite:not(.calm) :is([data-reveal], [data-stagger] > *) { animation-name: asentar-lite; }
   }
   @supports not (animation-timeline: view()) {
     html.js:not(.calm) :is([data-reveal], [data-stagger] > *) { opacity: 0; }
     html.js:not(.calm):not(.fx-booted) :is([data-reveal], [data-stagger] > *) { animation: rf-failsafe 0.4s ease 4s forwards; }
+  }
+}
+
+/* ---------- antetítulos (§4.5): raya cian de 28×3 px (la misma de .hero__pre). Con la puerta, la raya se tiende como cinta de rotular
+   y el texto entra 0,75 rem detrás. Timeline con nombre (--cinta) en el antetítulo: raya y texto miden la misma caja. ---------- */
+.eyebrow::before {
+  content: ''; display: inline-block; width: 28px; height: 3px; margin-right: 0.65em; vertical-align: 0.3em;
+  background: var(--cyan); transform-origin: left;
+}
+@keyframes filete { from { scale: 0 1; } }
+@keyframes cinta { from { opacity: 0; translate: -0.75rem 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    :root:not(.calm):not(.is-lite) .eyebrow {
+      view-timeline: --cinta block;
+      animation: cinta var(--ease-brand) both; animation-duration: auto; animation-timeline: --cinta; animation-range: cover 6% cover 26%;
+    }
+    :root:not(.calm):not(.is-lite) .eyebrow::before {
+      animation: filete var(--ease-brand) both; animation-duration: auto; animation-timeline: --cinta; animation-range: cover 2% cover 22%;
+    }
+  }
+}
+
+/* ---------- Vidrio frío (§4.3, src/components/ui/Vidrio.astro) ----------
+   .vidrio[data-vidrio="paso|salida"] > (picture > img.vidrio__img | div.vidrio__img) + .vidrio__niebla + .vidrio__frost
+   Marco: fondo hielo, variante acero, radio, filete interior), overflow: clip (no hidden: no crea contenedor
+   de scroll) y alto por aspect-ratio: var(--ar) (CLS 0; una clase del componente puede cambiarlo por media query sin !important).
+   Capas absolutas a sangre. Estado final por defecto: imagen limpia a escala 1, niebla a opacity 0, escarcha estática a .6.
+   paso   (todas menos hero y ficha): timeline propio --vidrio (cover 0-100 %). La imagen, a 1.14, deriva ±6 % dentro del marco; la niebla
+          (la misma foto a 96 px, tools/niebla.mjs) llega a 1, se despeja al cruzar el centro (38-72 %) y vuelve a .6 al salir.
+   salida (hero y ficha): timeline --salida del ancestro [data-salida], exit 0-100 %: la foto se acerca a 1.12 y la niebla vuelve a .7.
+          Deshielo al cargar (0,9 s, brand): solo con html.js, sin .vt (llegada por View Transition), sin calm ni lite.
+   Sin img (<Vidrio><Equipo/></Vidrio>): el slot va en div.vidrio__img y la niebla es un velo blanco radial (span.vidrio__niebla--velo).
+   --vidrio-zoom (1.14) cambia la escala de la deriva por componente (p. ej. un dibujo que no debe recortarse). */
+.vidrio {
+  position: relative; overflow: clip; aspect-ratio: var(--ar, 4 / 3); border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--cyan) 11%, var(--paper)); box-shadow: inset 0 0 0 1px var(--line);
+}
+[data-palette='acero'] .vidrio { background: color-mix(in srgb, var(--ink) 7%, var(--paper)); } /* «acero»: el cian se reduce a filetes */
+.vidrio__img, .vidrio__niebla, .vidrio__frost { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.vidrio__img, .vidrio__niebla { object-fit: cover; }
+.vidrio__niebla { opacity: 0; }
+.vidrio__niebla--velo { background: radial-gradient(closest-side, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.85)); }
+.vidrio__frost { object-fit: fill; opacity: 0.6; }
+@keyframes vidrio-deriva { from { translate: 0 -6%; } to { translate: 0 6%; } }
+@keyframes vidrio-paso { 0%, 10% { opacity: 1; } 38%, 72% { opacity: 0; } 100% { opacity: 0.6; } }
+@keyframes vidrio-acercar { to { scale: 1.12; } }
+@keyframes vidrio-empanar { to { opacity: 0.7; } }
+@keyframes deshielo { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  /* sin view(): el deshielo es la única animación de la niebla */
+  html.js:not(.vt):not(.calm):not(.is-lite) [data-vidrio='salida'] > .vidrio__niebla { animation: deshielo 1.3s var(--ease-brand) 0.1s backwards; }
+  @supports (animation-timeline: view()) {
+    :root:not(.calm):not(.is-lite) .vidrio { view-timeline: --vidrio block; }
+    :root:not(.calm):not(.is-lite) [data-vidrio='paso'] .vidrio__img {
+      scale: var(--vidrio-zoom, 1.14);
+      animation: vidrio-deriva linear both; animation-duration: auto; animation-timeline: --vidrio; animation-range: cover 0% cover 100%;
+    }
+    :root:not(.calm):not(.is-lite) [data-vidrio='paso'] > .vidrio__niebla {
+      animation: vidrio-paso linear both; animation-duration: auto; animation-timeline: --vidrio; animation-range: cover 0% cover 100%;
+    }
+    :root:not(.calm):not(.is-lite) [data-vidrio='salida'] .vidrio__img {
+      animation: vidrio-acercar linear both; animation-duration: auto; animation-timeline: --salida; animation-range: exit 0% exit 100%;
+    }
+    :root:not(.calm):not(.is-lite) [data-vidrio='salida'] > .vidrio__niebla {
+      animation: vidrio-empanar linear both; animation-duration: auto; animation-timeline: --salida; animation-range: exit 0% exit 100%;
+    }
+    /* el deshielo va SEGUNDO en la lista: mientras corre gana al de la salida; sin forwards, al terminar vuelve a mandar el scroll (0 arriba) */
+    html.js:not(.vt):not(.calm):not(.is-lite) [data-vidrio='salida'] > .vidrio__niebla {
+      animation: vidrio-empanar linear both, deshielo 1.3s var(--ease-brand) 0.1s backwards;
+      animation-duration: auto, 1.3s; animation-timeline: --salida, auto; animation-range: exit 0% exit 100%, normal;
+    }
+  }
+}
+
+/* ---------- salida en planos (§4.4 + AJ2): la sección que sale, [data-salida], da el timeline --salida (exit 0-100 %, linear).
+   [data-plano]   ≥960 px                                <960 px (el hero mide más que la ventana: el timeline pasa a la figura, lento)
+   rapido         translate 0 -24vh                       0 -10vh
+   medio          0 -12vh y opacity 1 → .3 desde el 40 %  quieto (no desciende de la figura: sin timeline)
+   lento          0 -6vh                                  0 -3vh
+   Con scrollY = 0 todo [data-plano] tiene translate 0 (la VT del rótulo no ve diferencia). ---------- */
+@keyframes plano { to { translate: 0 var(--plano, 0); } }
+@keyframes plano-medio { 40% { opacity: 1; } to { translate: 0 var(--plano, 0); opacity: 0.3; } }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* timeline-scope: una referencia a --salida sin [data-salida] que la declare da un timeline INACTIVO (estado final) y no uno nulo,
+       que Chrome resuelve como duración 0 y salta al final (foto a 1.12 y empañada). Un solo [data-salida] por página. */
+    :root:not(.calm):not(.is-lite) body { timeline-scope: --salida; }
+    /* inset 0: con auto el timeline toma el scroll-padding-top del html y la salida terminaría 88 px antes (hero y ficha miden un viewport) */
+    :root:not(.calm):not(.is-lite) [data-salida] { view-timeline: --salida block; view-timeline-inset: 0; }
+    :root:not(.calm):not(.is-lite) [data-plano] {
+      animation: plano linear both; animation-duration: auto; animation-timeline: --salida; animation-range: exit 0% exit 100%;
+    }
+    :root:not(.calm):not(.is-lite) [data-plano='rapido'] { --plano: -24vh; }
+    :root:not(.calm):not(.is-lite) [data-plano='medio'] { --plano: -12vh; animation-name: plano-medio; }
+    :root:not(.calm):not(.is-lite) [data-plano='lento'] { --plano: -6vh; }
+    @media (max-width: 959px) {
+      :root:not(.calm):not(.is-lite) [data-salida] { view-timeline: none; }
+      :root:not(.calm):not(.is-lite) [data-salida] [data-plano='lento'] { view-timeline: --salida block; view-timeline-inset: 0; }
+      :root:not(.calm):not(.is-lite) [data-plano='rapido'] { --plano: -10vh; }
+      :root:not(.calm):not(.is-lite) [data-plano='lento'] { --plano: -3vh; }
+      :root:not(.calm):not(.is-lite) [data-plano='medio'] { animation: none; }
+    }
   }
 }
 

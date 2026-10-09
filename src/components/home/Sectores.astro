@@ -1,16 +1,26 @@
 ---
 /*
-  #sectores (brand, MAPA §3 #4) · escena firma "La Cortina" (CONCEPTO §5). La única escena sticky del sitio. Todo CSS: 0 JS por cuadro.
-  Sin sonda: Q19 sin respuesta → sin cava.js, sin .cava__ctl y sin ScrambleText (cuando llegue Q19 se suman los tres).
+  #sectores (brand, MAPA §3 #4) · escena fijada 2 "La Cortina v2" (MOVIMIENTO-V2 §5.4). Todo CSS, 0 JS.
+  Sin sonda: Q19 sin respuesta → sin .cava__ctl y sin ScrambleText (cuando llegue Q19 se suman).
   Contrato: hijo directo de <main>, id="sectores", data-theme="brand", encabezado #sectores-title.
   Estructura:
-    .cava__pista   alto var(--alto) (180svh; 140svh con pointer:coarse: sin sonda, Q19, no hace falta la espera de 200/150), view-timeline --cava. El timeline va en la pista y no en la sección:
+    .cava__pista   alto var(--alto) (220svh; 160svh con pointer:coarse), view-timeline --cava. El timeline va en la pista y no en la sección:
                    así "contain" = exactamente mientras el sticky está fijo (la sección también contiene la lista de sectores).
-    .cava__sticky  sticky, top 0, 100svh, overflow clip, con el riel pintado en su fondo: escarcha (esquinas) · interior (eyebrow + H2,
-                   visible al 35 % detrás de las tiras desde el principio: la cortina tapa algo) · cortina (8 tiras; 6 en <768 px).
-    Después, en flujo normal y con el reveal estándar: los 4 sectores con su línea.
-  Gates (CSS + clases del head, antes del primer pintado): la versión ESTÁTICA es la de por defecto (pista auto, sticky static, cortina
-  oculta, interior visible). La escena solo se enciende con no-preference + min-height 600px + view() + html sin .calm ni .is-lite.
+    .cava__sticky  sticky, top 0, 100svh, overflow clip, con el riel pintado en su fondo. Capas, de atrás adelante: escarcha (esquinas) ·
+                   vaho (2 masas a ras del suelo; 1 en <768 px) · interior (eyebrow + H2, visible al 35 % detrás de las tiras desde el
+                   principio: la cortina tapa algo) · cortina (8 tiras; 6 en <768 px).
+    Después, en flujo normal: los 4 sectores, que avanzan desde el fondo (data-stagger="profundo").
+  Escena (rango contain de la pista):
+    tiras   cava-abrir: translate --dx + rotate --rot (propiedades individuales), contain 10+4k % → 55+4k %, brand.
+    dolly   la cortina entera se acerca: scale 1 → 1.12 (1.08 en <768 px), origen arriba al centro (las grapas no se despegan del riel),
+            contain 10 → 65 %, brand.
+    vaho    sale por la abertura y rueda hacia los lados: opacity 0 → .75 → .3 (la especificación: .55 → .15), scale .5 → 1.7, translate ±30vw (0 con una sola masa),
+            contain 18 → 92 %, linear.
+    balanceo QUITADO en la integración (§5.4 aceptación 5): en la QA de v2 sumaba +4,7 ms de media y +7 ms de p95 por cuadro a la
+            escena (CPU ×4, 1366×640, Lenis). src/scripts/cava.js queda sin importar; volver a importarlo aquí (y su transición en el b)
+            solo si se mide dentro de presupuesto en un equipo con GPU real.
+  Gates (CSS + clases del head, antes del primer pintado): la versión ESTÁTICA es la de por defecto (pista auto, sticky static, sin cortina
+  ni vaho, interior visible). La escena solo se enciende con no-preference + min-height 600px + view() + html sin .calm ni .is-lite.
 */
 import { sectors } from '../../data/site.js';
 import { asset } from '../../lib/url.js';
@@ -18,8 +28,9 @@ import { asset } from '../../lib/url.js';
 // Tiras de PVC, calculadas en el build. Orden del DOM: de fuera hacia dentro y por parejas (izq., der.), así las de dentro pintan encima
 // en los dos lados. Cada nodo lleva su juego de 8 (≥768 px) y los 6 primeros, también el de 6 (<768 px).
 //   x: centro con la cortina cerrada (% del ancho) · w: ancho (%) · dx: desplazamiento final (vw) · rot: giro final (la base se va
-//   hacia afuera) · k: 0 = junto al centro (arranca antes y llega antes).
-//   marco: vw que quedan a la vista en cada lado con la cortina abierta · paso: separación del atado · giro: grados de la tira central.
+//   hacia afuera) · k: 0 = junto al centro (arranca antes y llega antes; en el balanceo, se mece más).
+//   marco: vw a la vista en cada lado con la cortina abierta, antes del dolly (que los reduce a 50 − dolly × (50 − marco): ≈ 8,6vw con 8
+//   tiras y 1.12; ≈ 9vw con 6 y 1.08) · paso: separación del atado · giro: grados de la tira central.
 const juego = (n, marco, paso, giro) => {
   const m = n / 2, w = 100 / n + 1.5;
   return Array.from({ length: n }, (_, d) => {
@@ -32,25 +43,26 @@ const juego = (n, marco, paso, giro) => {
 const f = (v) => +v.toFixed(2);
 const vars = (t, n) => `--x${n}:${f(t.x)};--w${n}:${f(t.w)};--dx${n}:${f(t.dx)}vw;--rot${n}:${t.rot}deg;--k${n}:${t.k}`;
 const ocho = juego(8, 13, 3, 5);
-const seis = juego(6, 9, 2.5, 4);
+const seis = juego(6, 12, 2.5, 4);
 const tiras = ocho.map((t, d) => vars(t, 8) + (seis[d] ? ';' + vars(seis[d], 6) : ''));
 ---
 <section id="sectores" class="cava" data-theme="brand" aria-labelledby="sectores-title">
   <div class="cava__pista">
     <div class="cava__sticky">
       <div class="cava__escarcha" aria-hidden="true" style={`--frost:url(${asset('img/frost.svg')})`}></div>
+      <div class="cava__vaho" aria-hidden="true"><i></i><i></i></div>
       <div class="cava__interior">
         <p class="eyebrow">Cada minuto de inactividad cuenta</p>{/* [cliente · IG Dd7h8WOO9-3] */}
         <h2 id="sectores-title">Detrás de la cortina, la temperatura no se negocia.</h2>{/* [redactado] */}
       </div>
-      <div class="cava__cortina" aria-hidden="true">{tiras.map((s) => <i style={s}></i>)}</div>
+      <div class="cava__cortina" aria-hidden="true">{tiras.map((s) => <i style={s}><b></b></i>)}</div>
     </div>
   </div>
 
   <div class="cava__sectores container">
     <p class="cava__intro" data-reveal>Trabajamos donde una falla de frío se convierte en merma.</p>{/* [redactado; "mermas": IG, MAPA instalación] */}
     {/* Sectores [cliente · IG destacado Servicios] · líneas [redactado] · sin clientes hasta Q13 */}
-    <ul class="cava__lista" role="list" data-stagger>
+    <ul class="cava__lista" role="list" data-stagger="profundo">
       {sectors.map((s) => (
         <li class="cava__sector">
           <h3>{s.name}</h3>
@@ -63,8 +75,8 @@ const tiras = ocho.map((t, d) => vars(t, 8) + (seis[d] ? ';' + vars(seis[d], 6) 
 
 <style>
   /* ---------- estático (por defecto) ---------- */
-  .cava { --alto: 180svh; position: relative; isolation: isolate; padding-bottom: var(--section-y); background: var(--bg); color: var(--fg); }
-  @media (pointer: coarse) { .cava { --alto: 140svh; } }
+  .cava { --alto: 220svh; position: relative; isolation: isolate; padding-bottom: var(--section-y); background: var(--bg); color: var(--fg); }
+  @media (pointer: coarse) { .cava { --alto: 160svh; } }
 
   .cava__sticky { position: relative; display: grid; place-items: center; padding-top: var(--section-y); overflow: clip; }
   /* ancho ligado al cuerpo del H2 (6,4 × step-5 ≈ su línea más larga): la capa del interior no mide más que el texto, y con la
@@ -86,19 +98,36 @@ const tiras = ocho.map((t, d) => vars(t, 8) + (seis[d] ? ';' + vars(seis[d], 6) 
   }
   .cava__escarcha::after { --c: 100% 0; left: auto; right: 0; }
 
+  /* vaho: aire frío a ras del suelo, detrás del texto y de las tiras. Gradiente radial (0 assets); solo existe en la escena. Peor caso de
+     contraste (centro del radial en su pico, .75 × 38 % de blanco sobre el azul rey): blanco 4,3:1, y ahí solo llega el H2 (texto grande,
+     3:1); el antetítulo queda arriba, fuera del vaho. */
+  .cava__vaho { display: none; position: absolute; inset: 0; pointer-events: none; }
+  .cava__vaho i {
+    --vx: -30vw;
+    position: absolute; bottom: -6svh; left: calc(50% - 35vw); width: 70vw; height: 26svh;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--white) 38%, transparent), transparent);
+  }
+  .cava__vaho i + i { --vx: 30vw; }
+
   /* cortina: tiras de PVC translúcidas (hielo ~50 %, filo de 1 px, dos nervios y un reflejo), colgadas desde arriba por su grapa. El riel
-     es fondo del sticky (escena, abajo): fijo mientras las tiras giran, y sin capa nueva (presupuesto: 8 tiras + interior + escarcha).
-     Colores solo por token (MARCA §2.4): el PVC es hielo (cian + blanco) en las dos paletas; el filo de sombra sigue a --ink. */
+     es fondo del sticky (escena, abajo): fijo mientras las tiras giran, y sin capa nueva. Colores solo por token (MARCA §2.4): el PVC es
+     hielo (cian + blanco) en las dos paletas; el filo de sombra sigue a --ink. El i es el soporte (posición y apertura), el b el soporte del balanceo (hoy quieto)
+     (los dos sin pintura propia); el PVC es b::before y la grapa, encima, b::after. */
   .cava__cortina {
     --pvc: color-mix(in srgb, var(--cyan) 8%, var(--white));
     --pvc-2: color-mix(in srgb, var(--cyan) 22%, var(--white));
     --luz: color-mix(in srgb, var(--white) 20%, transparent);
-    display: none; position: absolute; inset: 0; pointer-events: none;
+    --dolly: 1.12;
+    display: none; position: absolute; inset: 0; pointer-events: none; transform-origin: 50% 0;
   }
   .cava__cortina i {
     --x: var(--x8); --w: var(--w8); --dx: var(--dx8); --rot: var(--rot8); --k: var(--k8);
     position: absolute; top: 0; bottom: 0; left: calc((var(--x) - var(--w) / 2) * 1%); width: calc(var(--w) * 1%);
     transform-origin: 50% 0;
+  }
+  .cava__cortina b { position: absolute; inset: 0; transform-origin: 50% 0; }
+  .cava__cortina b::before {
+    content: ''; position: absolute; inset: 0;
     background:
       linear-gradient(90deg, color-mix(in srgb, var(--white) 90%, transparent) 0 1px, transparent 1px calc(100% - 1px), color-mix(in srgb, var(--ink) 25%, transparent) calc(100% - 1px)),
       linear-gradient(90deg, transparent 5%, var(--luz) 5% 6%, transparent 6% 94%, var(--luz) 94% 95%, transparent 95%),
@@ -106,14 +135,18 @@ const tiras = ocho.map((t, d) => vars(t, 8) + (seis[d] ? ';' + vars(seis[d], 6) 
       linear-gradient(180deg, color-mix(in srgb, var(--pvc) 56%, transparent), color-mix(in srgb, var(--pvc-2) 36%, transparent) 55%, color-mix(in srgb, var(--pvc-2) 30%, transparent) 92%, color-mix(in srgb, var(--pvc) 60%, transparent));
   }
   /* grapa de cada tira */
-  .cava__cortina i::before {
+  .cava__cortina b::after {
     content: ''; position: absolute; top: 0; left: 32%; right: 32%; height: 22px;
     background: linear-gradient(var(--white), color-mix(in srgb, var(--ink) 30%, var(--white))); border-radius: 0 0 var(--radius) var(--radius);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 30%, transparent);
   }
   @media (max-width: 767px) {
+    .cava__cortina { --dolly: 1.08; }
     .cava__cortina i { --x: var(--x6); --w: var(--w6); --dx: var(--dx6); --rot: var(--rot6); --k: var(--k6); }
     .cava__cortina i:nth-child(n + 7) { display: none; }
+    /* una sola masa de vaho, centrada: se abre hacia los dos lados con la escala */
+    .cava__vaho i { --vx: 0vw; }
+    .cava__vaho i + i { display: none; }
   }
 
   /* lista de sectores, en flujo normal después del sticky */
@@ -125,27 +158,37 @@ const tiras = ocho.map((t, d) => vars(t, 8) + (seis[d] ? ';' + vars(seis[d], 6) 
   .cava__sector h3 { margin-bottom: 0.6rem; }
   .cava__sector p { color: var(--muted); }
 
-  /* ---------- escena (CONCEPTO §5 Mecánica): rango contain de la pista = mientras el sticky está fijo ---------- */
-  @keyframes cava-abrir { to { transform: translateX(var(--dx)) rotate(var(--rot)); } }
+  /* ---------- escena: rango contain de la pista = mientras el sticky está fijo. Solo translate / rotate / scale / opacity ---------- */
+  @keyframes cava-abrir { to { translate: var(--dx) 0; rotate: var(--rot); } }
+  @keyframes cava-dolly { to { scale: var(--dolly); } }
+  /* opacidades por encima de las de la especificación (.55 / .15): a .15 el vaho final no se leía en las capturas (AJ: ante la duda, visible) */
+  @keyframes cava-vaho { 0% { opacity: 0; translate: 0 0; scale: 0.5; } 35% { opacity: 0.75; } 100% { opacity: 0.3; translate: var(--vx) -2svh; scale: 1.7; } }
   /* el interior arranca al 35 % (no en 0): mientras la cortina está cerrada el H2 se adivina detrás del PVC, así la escena revela algo */
-  @keyframes cava-entrar { from { opacity: 0.35; transform: translateY(2rem); } }
+  @keyframes cava-entrar { from { opacity: 0.35; translate: 0 2rem; } }
   @keyframes cava-escarcha { from { opacity: 0; } }
 
   @media (prefers-reduced-motion: no-preference) and (min-height: 600px) {
     @supports (animation-timeline: view()) {
       :global(:root:not(.calm, .is-lite)) .cava__pista { height: var(--alto); view-timeline: --cava block; view-timeline-inset: 0; }
-      /* riel: platina de 7 px bajo el header, pintada en el fondo del sticky (no rota con las tiras) */
+      /* riel: platina de 7 px bajo el header, pintada en el fondo del sticky (no rota con las tiras ni se acerca con el dolly) */
       :global(:root:not(.calm, .is-lite)) .cava__sticky {
         position: sticky; top: 0; height: 100svh; padding-top: var(--header-h);
         background: linear-gradient(color-mix(in srgb, var(--ink) 6%, var(--white)), color-mix(in srgb, var(--ink) 38%, var(--white)) 75%, color-mix(in srgb, var(--ink) 55%, var(--white))) 0 var(--header-h) / 100% 7px no-repeat;
       }
-      :global(:root:not(.calm, .is-lite)) .cava__cortina { display: block; }
       /* tiras y escarcha cuelgan bajo el header fijo: con el sticky clavado se siguen viendo las grapas */
       :global(:root:not(.calm, .is-lite)) :is(.cava__cortina, .cava__escarcha) { top: var(--header-h); }
       /* el shorthand animation reinicia animation-timeline: va después */
+      :global(:root:not(.calm, .is-lite)) .cava__cortina {
+        display: block;
+        animation: cava-dolly var(--ease-brand) both; animation-duration: auto; animation-timeline: --cava; animation-range: contain 10% contain 65%;
+      }
       :global(:root:not(.calm, .is-lite)) .cava__cortina i {
         animation: cava-abrir var(--ease-brand) both; animation-duration: auto; animation-timeline: --cava;
         animation-range: contain calc(10% + var(--k) * 4%) contain calc(55% + var(--k) * 4%);
+      }
+      :global(:root:not(.calm, .is-lite)) .cava__vaho { display: block; }
+      :global(:root:not(.calm, .is-lite)) .cava__vaho i {
+        animation: cava-vaho linear both; animation-duration: auto; animation-timeline: --cava; animation-range: contain 18% contain 92%;
       }
       :global(:root:not(.calm, .is-lite)) .cava__interior {
         animation: cava-entrar var(--ease-brand) both; animation-duration: auto; animation-timeline: --cava; animation-range: contain 0% contain 40%;

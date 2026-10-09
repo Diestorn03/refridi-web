@@ -32,7 +32,7 @@ const fullTitle = title.includes(brand.name) ? title : `${title} · ${brand.name
 const home = origin ? origin + url() : undefined;
 
 // MAPA §4: un solo nodo HVACBusiness. Sin aggregateRating/review (pautas de Google), sin priceRange, sin geo (Q22), sin foundingDate (Q10),
-// sin logo/image hasta tener PNG del logo y foto real (Q7, Q8), sin la Academia como department hasta Q6.
+// sin logo/image hasta tener PNG del logo y el visto bueno de las fotos (Q7, Q21), sin la Academia como department hasta Q6.
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'HVACBusiness',

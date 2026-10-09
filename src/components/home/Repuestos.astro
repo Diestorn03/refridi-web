@@ -1,13 +1,26 @@
 ---
 /* #repuestos (light, MAPA §3 #6 · CONCEPTO §4 Táctil): rejilla de familias, nunca tira horizontal. Cada tarjeta abre el WhatsApp de
-   repuestos (Q3) con "¿Tienen disponible {familia}?". 2 columnas en móvil, 3 desde 900 px. Sin precios (§7). Íconos propios (Q8: sin fotos). */
+   repuestos (Q3) con "¿Tienen disponible {familia}?". Sin precios (§7). Motores ventiladores es la tarjeta destacada, con la foto del motor
+   Kielmann [cliente · IG DZ43wAWOvVA]: en móvil, a lo ancho y con la foto al lado; desde 900 px, la primera columna de 3 y alto de 3 filas.
+   El resto, 2 columnas con su ícono propio; la de envíos cierra a lo ancho.
+   Movimiento "Anaquel" (MOVIMIENTO-V2 §5.5): las tarjetas salen del fondo del estante hacia el lector, columna por columna (data-stagger=
+   "profundo" con el escalón --c = columna: --cd desde 900 px, --cm debajo). La foto del motor va en vidrio (se desempaña y deriva). Los
+   íconos llegan un tiempo después que su tarjeta, subiendo y enderezándose; el de envíos sale despachado desde la izquierda. Se anima el
+   li, nunca el a.rep.fila (su :active y su hover quedan como estaban). Reduced, calm y lite: rejilla estática (lite: solo opacity). */
 import Icon from '../ui/Icon.astro';
+import Vidrio from '../ui/Vidrio.astro';
 import { spares, wa, waText } from '../../data/site.js';
+import { fotos } from '../../data/fotos.js';
 import { ext, nuevaPestana } from '../../lib/url.js';
+
+const destacada = spares.families.find((f) => f.id === 'motores');
+const familias = spares.families.filter((f) => f !== destacada);
+// Columna de cada bandeja (el escalón del anaquel). Desde 900 px: destacada 0, familias en las columnas 2 y 3, envíos 1. Debajo: destacada y
+// envíos a lo ancho (0), familias en 2 columnas.
+const col = (cd, cm) => `--cd:${cd};--cm:${cm}`;
 
 // Íconos de familia: 48×48, trazo, currentColor, decorativos. Dibujo propio (vista lateral, sin el remolino del isotipo).
 const glyph = {
-  motores: '<rect x="5" y="15" width="22" height="18" rx="2"/><path d="M10 15v18M14 15v18M27 21h3v6h-3M30 24h5M7 33v3h18v-3M35 24c0-6 1.2-11 3.5-14 1.2 3.5.8 9.5-3.5 14Zm0 0c0 6 1.2 11 3.5 14 1.2-3.5.8-9.5-3.5-14Z"/>',
   valvulas: '<path d="M4 30h10M34 30h10M4 27v6M44 27v6M24 25v-3"/><rect x="14" y="25" width="20" height="10" rx="1.5"/><rect x="16" y="8" width="16" height="14" rx="1.5"/><path d="M20 12h8M20 15h8M20 18h8M32 12h3a2 2 0 0 1 2 2v2"/>',
   filtros: '<path d="M4 24h6M38 24h6M10 24l4-7h20l4 7-4 7H14ZM19 24h10M26 21l3 3-3 3"/>',
   compresores: '<path d="M12 38V22a12 10 0 0 1 24 0v16M12 27h24M9 38h30M14 38v3M34 38v3M36 25h4v-6h4M12 31H8v6"/>',
@@ -17,17 +30,30 @@ const glyph = {
 ---
 <section id="repuestos" class="section repuestos" data-theme="light" aria-labelledby="repuestos-title">
   <div class="container">
-    <header class="section__head" data-reveal>
+    <header class="section__head">
       <p class="eyebrow">Repuestos y herramientas</p>
-      <h2 id="repuestos-title">Repuestos de refrigeración</h2>
-      <p class="lead">Elija la familia y consulte la disponibilidad por WhatsApp, directo con la línea de repuestos.</p>
+      <h2 id="repuestos-title" data-contrae>Repuestos de refrigeración</h2>
+      <p class="lead" data-reveal>Elija la familia y consulte la disponibilidad por WhatsApp, directo con la línea de repuestos.</p>
     </header>
 
-    <ul class="rep__grid" role="list" data-stagger>
-      {spares.families.map((f) => (
-        <li>
+    <ul class="rep__grid" role="list" data-stagger="profundo">
+      <li class="rep__destacada" style={col(0, 0)}>
+        <a class="rep rep--foto fila" href={wa('repuestos', waText.repuestosFamilia(destacada.ask))} {...ext}>
+          {/* alt vacío: el enlace ya se nombra por su texto (familia, marca y modelo). sizes: 42 % de la tarjeta (≤280px) en móvil; desde 900 px,
+              la columna menos el relleno (≈ 30vw, hasta 345px) */}
+          <Vidrio img={fotos.repuestos} ar="4/5" alt="" class="rep__foto" sizes="(min-width: 900px) min(30vw, 345px), min(36vw, 280px)" />
+          <div class="rep__txt">
+            <h3 class="rep__name">{destacada.name}</h3>
+            <p class="rep__detail">{destacada.detail}</p>
+            <span class="rep__go label">{spares.cta}<Icon name="arrow-up-right" size={18} class="rep__arrow" /></span>
+            <span class="sr-only"> por WhatsApp {nuevaPestana}</span>
+          </div>
+        </a>
+      </li>
+      {familias.map((f, j) => (
+        <li style={col(1 + (j % 2), j % 2)}>
           <a class="rep fila" href={wa('repuestos', waText.repuestosFamilia(f.ask))} {...ext}>
-            <svg class="rep__icon" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" set:html={glyph[f.id]} />
+            <span class="rep__icon" aria-hidden="true"><svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false" set:html={glyph[f.id]} /></span>
             <h3 class="rep__name">{f.name}</h3>
             {f.detail && <p class="rep__detail">{f.detail}</p>}
             <span class="rep__go label">{spares.cta}<Icon name="arrow-up-right" size={18} class="rep__arrow" /></span>
@@ -35,9 +61,9 @@ const glyph = {
           </a>
         </li>
       ))}
-      <li>
+      <li class="rep__envio" style={col(1, 0)}>
         <a class="rep rep--envio fila" href={wa('repuestos', waText.repuestos)} {...ext}>
-          <svg class="rep__icon" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" set:html={glyph.envios} />
+          <span class="rep__icon" aria-hidden="true"><svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false" set:html={glyph.envios} /></span>
           <h3 class="rep__name">{spares.shipping}</h3>
           <p class="rep__detail">¿Busca otra pieza? Escríbanos el modelo o la referencia.</p>
           <span class="rep__go label">Consultar otra pieza<Icon name="arrow-up-right" size={18} class="rep__arrow" /></span>
@@ -48,10 +74,20 @@ const glyph = {
   </div>
 </section>
 
+<script>
+  import '../../scripts/contrae.js';
+</script>
+
 <style>
   .rep__grid { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 20px); }
-  @media (min-width: 900px) { .rep__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  .rep__grid > li { display: flex; }
+  .rep__grid > li { --c: var(--cm); display: flex; }
+  .rep__grid > :is(.rep__destacada, .rep__envio) { grid-column: 1 / -1; }
+  @media (min-width: 900px) {
+    .rep__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .rep__grid > .rep__destacada { grid-column: 1; grid-row: 1 / span 3; }
+    .rep__grid > .rep__envio { grid-column: 2 / -1; }
+    .rep__grid > li { --c: var(--cd); }
+  }
 
   .rep {
     position: relative; isolation: isolate; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;
@@ -65,7 +101,20 @@ const glyph = {
     transition: opacity var(--d-1) var(--ease-brand);
   }
   .rep--envio { background: transparent; border-color: var(--stroke); }
-  .rep__icon { width: clamp(40px, 4vw, 52px); height: auto; margin-bottom: 0.5rem; color: var(--link); }
+  /* destacada: foto al lado del texto en móvil, encima desde 900 px (alto por width/height: CLS 0) */
+  .rep--foto { flex-direction: row; align-items: flex-start; gap: clamp(14px, 3vw, 24px); }
+  /* foto en vidrio (alto por aspect-ratio 4/5: CLS 0). min-width 0: sin él, al cargar, el ancho intrínseco que da sizes (36vw) gana a la
+     base del flex y la tarjeta crecía 5 px. Desde 900 px, a lo ancho de la tarjeta (las capas del vidrio son absolutas: sin stretch mediría 0) */
+  .rep :global(.rep__foto) { flex: 0 0 min(42%, 280px); min-width: 0; }
+  .rep__txt { align-self: stretch; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  @media (min-width: 900px) {
+    .rep--foto { flex-direction: column; }
+    .rep :global(.rep__foto) { flex: none; align-self: stretch; margin-bottom: 0.5rem; }
+    .rep__txt { flex: 1; }
+  }
+  /* el ícono va en un span: la animación (asomar / despachar) sobre el <svg> no iría al compositor */
+  .rep__icon { display: block; width: clamp(40px, 4vw, 52px); margin-bottom: 0.5rem; color: var(--link); }
+  .rep__icon svg { width: 100%; height: auto; }
   .rep__name {
     font-size: clamp(1.05rem, 0.92rem + 0.7vw, 1.45rem); line-height: 1.12;
     hyphens: auto; overflow-wrap: break-word; /* "deshidratadores" a 320 px */
@@ -85,5 +134,28 @@ const glyph = {
   @media (max-width: 479px) {
     .rep__icon { margin-bottom: 0.25rem; }
     .rep__go { padding-top: 0.5rem; }
+  }
+
+  /* ---------- anaquel (puerta única de MOVIMIENTO-V2 §4.1; por defecto, estado final) ----------
+     Bandejas: el reveal "profundo" de base.css con otro rango, en vh desde que asoma el borde superior de cada li (no en % de cover: la
+     destacada mide 3 filas y con % llegaría después que sus vecinas). Así, en una misma fila, opacity(c0) ≥ opacity(c1) ≥ opacity(c2) en
+     todo el recorrido. Íconos: segundo plano dentro de la tarjeta, sobre el timeline de su li (--bandeja), 8vh por detrás de ella. */
+  /* bandeja: el "profundo" de base.css, más hondo en el anaquel (revisión final de v2: 4rem/.94 apenas se notaba) */
+  @keyframes bandeja { from { opacity: 0; translate: 0 6rem; scale: 0.88; } }
+  @keyframes asomar { from { opacity: 0; translate: 0 0.75rem; rotate: -6deg; } }
+  @keyframes despachar { from { opacity: 0; translate: -2.5rem 0; } }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :global(html:not(.calm)) .rep__grid > li {
+        view-timeline: --bandeja block;
+        animation-range: cover calc(var(--c) * 6vh) cover calc(36vh + var(--c) * 6vh);
+      }
+      :global(:root:not(.calm):not(.is-lite)) .rep__grid > li { animation-name: bandeja; }
+      :global(:root:not(.calm):not(.is-lite)) .rep__icon {
+        animation: asomar var(--ease-brand) both; animation-duration: auto; animation-timeline: --bandeja;
+        animation-range: cover calc(8vh + var(--c) * 6vh) cover calc(44vh + var(--c) * 6vh);
+      }
+      :global(:root:not(.calm):not(.is-lite)) .rep--envio .rep__icon { animation-name: despachar; }
+    }
   }
 </style>

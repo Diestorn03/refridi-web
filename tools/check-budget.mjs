@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// Presupuesto de JS por página (PREPARACION §11: ≤75 KB gzip). Correr DESPUÉS de `npm run build`.
+// Presupuesto de JS por página (PREPARACION §11; MOVIMIENTO-V2, AJ3: ≤80 KB gzip). Correr DESPUÉS de `npm run build`.
 // Por cada HTML de dist/: suma el gzip de cada <script src> y de sus imports estáticos (recursivo, cada archivo una vez; los import()
 // dinámicos no cuentan: no bloquean la página), más los <script> en línea. Imprime la tabla y sale con 1 si alguna página se pasa.
-// Uso: node tools/check-budget.mjs [dist] [--max=75]
+// Uso: node tools/check-budget.mjs [dist] [--max=80]
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const args = process.argv.slice(2);
-const MAX = +(args.find((a) => a.startsWith('--max='))?.slice(6) ?? 75);
+const MAX = +(args.find((a) => a.startsWith('--max='))?.slice(6) ?? 80);
 const DIST = resolve(args.find((a) => !a.startsWith('--')) ?? join(fileURLToPath(new URL('../', import.meta.url)), 'dist'));
 if (!existsSync(DIST)) { console.error(`No existe ${DIST}: corre antes npm run build.`); process.exit(1); }
 

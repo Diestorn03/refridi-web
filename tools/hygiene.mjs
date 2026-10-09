@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Gate de higiene (PREPARACION §8): que no se cuelen datos ni textos de otros clientes del estudio, ni CTAs ni firmas vetadas (CONCEPTO §8:
-// "Cotizar por WhatsApp", "visita técnica", "Pedir diagnóstico", "Agendar…", expo.out, SplitText, DrawSVG, backdrop-filter).
+// "Cotizar por WhatsApp", "visita técnica", "Pedir diagnóstico", "Agendar…", expo.out, DrawSVG, backdrop-filter). El partido por líneas volvió en v2,
+// solo en src/scripts/contrae.js (MOVIMIENTO-V2 §4.6): ya no se veta.
 // Revisa src/, public/, .github/ y package.json (texto; los binarios se saltan), comentarios incluidos: ni para decir "sin X" se nombra X.
 // Sale con 1 si hay alguna coincidencia.
 // Uso: node tools/hygiene.mjs
@@ -9,7 +10,7 @@ import { join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
-const BAD = /visual ?dental|vd[:-]|ssds|renew|expertsddt|polanco|15106760418|dimensionar|Cotizar por WhatsApp|visita técnica|pedir diagnóstico|\bagend|expo\.out|splittext|drawsvg|backdrop-filter/gi;
+const BAD = /visual ?dental|vd[:-]|ssds|renew|expertsddt|polanco|15106760418|dimensionar|Cotizar por WhatsApp|visita técnica|pedir diagnóstico|\bagend|expo\.out|drawsvg|backdrop-filter/gi;
 const BINARY = new Set(['.woff', '.woff2', '.ttf', '.otf', '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ico', '.mp4', '.webm', '.pdf']);
 
 const walk = (p) => (statSync(p).isDirectory() ? readdirSync(p).flatMap((n) => walk(join(p, n))) : [p]);

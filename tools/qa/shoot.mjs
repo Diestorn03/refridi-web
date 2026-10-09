@@ -17,8 +17,9 @@
 import { spawn } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
-const OUT = (process.env.SHOTS_DIR || fileURLToPath(new URL('../../.shots/', import.meta.url))).replaceAll('\\', '/').replace(/\/?$/, '/');
+const OUT = (process.env.SHOTS_DIR ? resolve(process.env.SHOTS_DIR) : fileURLToPath(new URL('../../.shots/', import.meta.url))).replaceAll('\\', '/').replace(/\/?$/, '/');
 mkdirSync(OUT, { recursive: true });
 const argv = process.argv.slice(2);
 const flag = (k, d) => { const a = argv.find((x) => x === `--${k}` || x.startsWith(`--${k}=`)); return a ? (a.includes('=') ? a.split('=').slice(1).join('=') : true) : d; };
